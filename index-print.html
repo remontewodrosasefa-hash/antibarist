@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f2e8c9">
+<title>Antibarist · prototype v4</title>
+<link rel="stylesheet" href="frameworks-frames/frames.css">
+<script src="frameworks-frames/frames.js" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* palette taken from the Parasite poster. navy + lemon stay for the logo and the main button only */
+:root{
+  --paper:#f2e8c9; --paper2:#e9ddb8; --ink:#13302a; --mute:#66705f; --line:#d6c89f;
+  --ochre:#f4b63f; --tomato:#e5603a; --green:#2b7a5c; --shade:#24503f; --floor:#8fa08e;
+  --navy:#14295c; --yellow:#f3e23b;
+  --title:'Amatic SC',cursive; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --top:52px; --dock:52px;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--paper);color:var(--ink);font:400 13px/1.55 var(--mono);overflow:hidden;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:inherit}
+a{color:inherit}
+img{display:block}
+.k{font:500 10.5px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute)}
+
+/* top */
+.top{position:fixed;inset:0 0 auto 0;height:calc(var(--top) + var(--sat));padding:var(--sat) 14px 0;display:flex;align-items:center;gap:12px;z-index:40;background:var(--paper);border-bottom:1.5px solid var(--ink)}
+.logo{background:var(--navy);color:var(--yellow);font:700 20px/1 var(--title);letter-spacing:2px;padding:5px 11px 3px;position:relative;flex:none}
+.logo i{font-style:normal;font-size:10px;position:absolute;left:3px;top:1px}
+.logo i+i{left:auto;top:auto;right:3px;bottom:0;transform:rotate(180deg)}
+.status{white-space:nowrap;font-size:11px;line-height:1.25;color:var(--mute);display:flex;align-items:center;gap:7px}
+.status .d{width:6px;height:6px;border-radius:50%;background:var(--green);flex:none}
+body.closed .status .d{background:var(--tomato)}
+.status b{font-weight:500;color:var(--ink);display:block}
+.sp{flex:1}
+.here{font-size:11px;color:var(--mute);display:flex;align-items:center;gap:6px}
+.here svg{width:22px;height:11px}
+.tune{width:28px;height:28px;display:grid;place-items:center}
+
+/* stage: three bays side by side, like the cabinets in the poster */
+.stage{position:fixed;left:0;right:0;top:calc(var(--top) + var(--sat));bottom:calc(var(--dock) + var(--sab));overflow-x:auto;overflow-y:hidden;scrollbar-width:none;background:var(--tomato);scroll-snap-type:x mandatory;overscroll-behavior-x:contain}
+.stage::-webkit-scrollbar{display:none}
+.track{position:relative;height:100%;width:max-content;margin:0 auto;display:flex;gap:8px;padding:8px 22px;font-size:var(--u,7px)}
+.bay{position:relative;height:100%;aspect-ratio:600/1100;max-width:calc(100vw - 44px);flex:none;scroll-snap-align:center;outline:1.5px solid var(--ink);overflow:hidden;background:var(--paper)}
+.bay svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hit{cursor:pointer}
+.hit:focus{outline:none}
+.hit:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.fr{transition:opacity .3s}
+.track.filtering .fr:not(.on){opacity:.22}
+.wash{position:absolute;inset:8px 22px;background:var(--ink);mix-blend-mode:multiply;opacity:0;transition:opacity .8s;pointer-events:none;z-index:20}
+body.closed .wash{opacity:.38}
+#bulb{transition:fill .5s}
+body.closed #bulb{fill:var(--shade)}
+.eyes{transform-box:fill-box;transform-origin:center;animation:blink 5.5s infinite}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+
+/* visitor cats walk on the floor strip across all bays */
+.floor{position:absolute;left:22px;right:22px;bottom:8px;height:calc((100% - 16px) * 140 / 1100);z-index:15;pointer-events:none}
+.cat{position:absolute;transform:translate(-50%,-100%);transform-origin:50% 100%;cursor:pointer;pointer-events:auto;width:calc(var(--u) * 10)}
+.cat svg{width:100%;height:auto;overflow:visible;display:block}
+.cat svg path{fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.cat.you svg path{stroke:var(--navy)}
+.cat .flip{transform-box:fill-box;transform-origin:center}
+.cat.right .flip{transform:scaleX(-1)}
+.cat .lb,.cat .ls{display:none}
+.cat.walk .la{animation:la .38s steps(1) infinite}
+.cat.walk .lb{display:inline;animation:lb .38s steps(1) infinite}
+@keyframes la{50%{opacity:0}}
+@keyframes lb{0%{opacity:0}50%{opacity:1}}
+.cat.sit .la{display:none}.cat.sit .ls{display:inline}
+.cat .tail{transform-box:view-box;transform-origin:100px 31px;animation:tail 2.4s ease-in-out infinite}
+@keyframes tail{50%{transform:rotate(-8deg)}}
+.cat .nm{position:absolute;left:50%;top:100%;transform:translateX(-50%);font:500 10px/1 var(--mono);color:var(--ink);white-space:nowrap;letter-spacing:.04em;margin-top:1px}
+.cat.you .nm{color:var(--navy)}
+
+.pop{position:absolute;z-index:35;background:var(--paper);border:1.5px solid var(--ink);padding:14px 16px 16px;width:250px;transform:translate(-50%,-100%)}
+.pop .t{font:700 28px/1 var(--title)}
+.pop p{font-size:12px;line-height:1.45;color:var(--mute);margin:4px 0 12px}
+.pop input{font:400 14px var(--mono);border:0;border-bottom:1px solid var(--ink);width:100%;padding:6px 0;margin-bottom:12px;background:transparent;outline:0;color:var(--ink)}
+.pop .act{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em;background:var(--navy);color:var(--yellow);padding:10px 14px}
+
+/* dock: region tabs + ask hoa, one row */
+.dock{position:fixed;left:0;right:0;bottom:0;height:calc(var(--dock) + var(--sab));padding-bottom:var(--sab);z-index:40;background:var(--paper);border-top:1.5px solid var(--ink);display:flex}
+.regions{flex:1;min-width:0;display:flex;gap:18px;overflow-x:auto;scrollbar-width:none;padding:0 14px;align-items:center}
+.regions::-webkit-scrollbar{display:none}
+.rg{flex:none;font:500 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute);padding:5px 0;border-bottom:1.5px solid transparent}
+.rg.on{color:var(--ink);border-color:var(--ink)}
+.rg sup{font-size:9px;margin-left:2px}
+.btn-ask{flex:none;background:var(--navy);color:var(--yellow);font:700 25px/1 var(--title);letter-spacing:.06em;padding:3px 20px 0}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(19,48,42,.18);opacity:0;pointer-events:none;transition:opacity .3s;z-index:55}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;height:88dvh;background:var(--paper);z-index:60;border-top:1.5px solid var(--ink);transform:translateY(102%);transition:transform .4s cubic-bezier(.3,.9,.3,1);display:flex;flex-direction:column}
+.sheet.open{transform:none}
+.sheet.short{height:auto;max-height:88dvh}
+.grab{flex:none;height:22px;display:flex;justify-content:center;align-items:center;touch-action:none;cursor:grab}
+.grab i{width:34px;height:3px;background:var(--line);border-radius:2px}
+.shead{flex:none;display:flex;align-items:flex-start;padding:2px 18px 14px;gap:12px}
+.shead .t{flex:1;min-width:0}
+.shead h2{font:700 44px/.95 var(--title);letter-spacing:.02em;margin-top:6px}
+.shead .sub{color:var(--mute);margin-top:4px;font-size:12px}
+.x{font:500 10.5px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute);padding:6px 0 6px 10px}
+.sbody{flex:1;overflow-y:auto;padding:0 18px calc(28px + var(--sab))}
+.sbody p{margin-bottom:12px}
+.rule{height:1px;background:var(--line);margin:18px 0}
+.labelimg{margin:0 0 18px;background:var(--paper2);padding:22px}
+.labelimg img{width:72%;margin:0 auto}
+.rows div{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line)}
+.rows dt{font:500 10.5px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute);padding-top:2px}
+.rows dd{text-align:right}
+.tbc{color:var(--tomato)}
+.char{font:700 30px/1.1 var(--title);letter-spacing:.03em;margin:4px 0 16px}
+.quote{font:700 26px/1.15 var(--title);letter-spacing:.02em;margin:6px 0 16px}
+.quote+.k{margin-top:-8px}
+.recipe{display:grid;grid-template-columns:repeat(4,1fr);margin:8px 0 6px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.recipe div{padding:10px 0 9px;font:500 9.5px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--mute);text-align:center}
+.recipe div+div{border-left:1px solid var(--line)}
+.recipe b{display:block;font:700 30px/1.05 var(--title);color:var(--ink);letter-spacing:0}
+.note-ph{font-size:10.5px;color:var(--mute);margin:8px 0 20px}
+.primary{display:block;width:100%;background:var(--navy);color:var(--yellow);font:500 11.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.14em;padding:16px;text-align:center;text-decoration:none}
+.link{display:inline-block;font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.12em;border-bottom:1px solid currentColor;padding:14px 0 3px;margin-top:4px;text-decoration:none}
+.acts{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.acts .primary{margin-bottom:6px}
+
+/* crate */
+.filters{display:flex;gap:16px;margin:0 0 16px;overflow-x:auto;scrollbar-width:none}
+.crate{display:grid;grid-template-columns:1fr 1fr;gap:22px 14px}
+.card .im{aspect-ratio:1;background:var(--paper2) center/cover;margin-bottom:8px;box-shadow:inset 0 0 0 12px var(--paper2),0 0 0 1.5px var(--ink)}
+.card b{display:block;font:700 22px/1 var(--title);letter-spacing:.02em}
+.card span{font-size:10.5px;color:var(--mute)}
+
+/* events */
+.ev{padding:4px 0 18px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.ev h4{font:700 32px/.95 var(--title);margin:8px 0 8px;letter-spacing:.02em}
+.hours{width:100%;border-collapse:collapse;margin-bottom:14px}
+.hours td{padding:8px 0;border-bottom:1px solid var(--line)}
+.hours td:last-child{text-align:right}
+.hours tr.today td{color:var(--tomato);font-weight:500}
+
+/* chat */
+.topics{flex:none;display:flex;gap:16px;overflow-x:auto;padding:0 18px;border-bottom:1px solid var(--line);scrollbar-width:none}
+.topics::-webkit-scrollbar{display:none}
+.topic{flex:none;font:500 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute);padding:4px 0 10px;border-bottom:1px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.topic.on{color:var(--ink);border-color:var(--ink)}
+.chat{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:16px}
+.m{max-width:86%}
+.m .who{font:500 10px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute);margin-bottom:2px}
+.m.h{padding-left:10px;border-left:2px solid var(--ochre)}
+.m.h .who{color:var(--tomato)}
+.m.me{align-self:flex-end;text-align:right}
+.m.me .who{color:var(--navy)}
+.sys{font-size:10.5px;color:var(--mute);border-bottom:1px solid var(--line);padding-bottom:12px}
+.typing{font-size:11px;color:var(--mute)}
+.compose{flex:none;display:flex;gap:12px;padding:10px 18px calc(12px + var(--sab));border-top:1px solid var(--line);align-items:center}
+.compose input{flex:1;min-width:0;border:0;background:transparent;font:400 14px var(--mono);outline:0;padding:10px 0;color:var(--ink)}
+.compose button{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--navy)}
+.locked{padding:40px 0;text-align:center}
+.locked .quote{margin-bottom:8px}
+
+/* ask hoa */
+.hoa-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.hoa-head img{width:54px;height:54px;object-fit:cover;object-position:50% 8%;border-radius:50%;background:var(--ochre);border:1.5px solid var(--ink)}
+.prog{display:flex;gap:4px;margin-bottom:18px}
+.prog i{flex:1;height:2px;background:var(--line)}.prog i.on{background:var(--ink)}
+.say{font:700 36px/1.02 var(--title);letter-spacing:.02em;margin-bottom:18px}
+.opts button{display:flex;justify-content:space-between;align-items:center;width:100%;padding:15px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.opts button:first-child{border-top:1px solid var(--line)}
+.opts button::after{content:"→";color:var(--mute)}
+.opts button:active{background:var(--paper2)}
+.pick{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);width:100%}
+.pick .im{width:64px;height:64px;flex:none;background:var(--paper2) center/cover;box-shadow:inset 0 0 0 6px var(--paper2),0 0 0 1.5px var(--ink)}
+.pick b{font:700 24px/1 var(--title);display:block;letter-spacing:.02em}
+.pick span{font-size:11px;color:var(--mute)}
+
+/* toast, demo */
+.toast{position:fixed;left:14px;right:14px;top:calc(var(--top) + var(--sat) + 8px);z-index:90;background:var(--ink);color:var(--paper);font-size:11.5px;padding:10px 14px;opacity:0;transform:translateY(-6px);transition:.25s;pointer-events:none;text-align:center}
+.toast.on{opacity:1;transform:none}
+.demo{position:fixed;right:10px;top:calc(var(--top) + var(--sat) + 4px);z-index:45;background:var(--paper);border:1.5px solid var(--ink);padding:10px 14px;display:none;flex-direction:column;width:240px}
+.demo.on{display:flex}
+.demo button{padding:9px 0;border-bottom:1px solid var(--line);font-size:12px}
+.demo button:last-child{border:0}
+
+@media (min-width:900px){
+  .bay{max-width:none}
+  .stage{scroll-snap-type:none}
+  .sheet{left:auto;right:0;top:calc(var(--top) + var(--sat));bottom:0;width:420px;height:auto;max-height:none;border-top:0;border-left:1.5px solid var(--ink);transform:translateX(102%)}
+  .sheet.open{transform:none}
+  .grab{display:none}
+  .shead{padding-top:20px}
+  .scrim{background:transparent}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="logo"><i>A</i>ANTIBARIST<i>A</i></div>
+  <div class="status"><span class="d"></span><div id="statusTxt"></div></div>
+  <div class="sp"></div>
+  <button class="here" id="hereBtn" aria-label="people here now"><svg viewBox="0 0 140 60"><path d="M8 36 L12 16 L18 27 L23 14 L27 28 L100 28 M100 28 L137 12 L134 18 L100 33 M8 36 L18 38 L14 52 L22 44 L24 54 L30 38 L84 34 L80 50 L88 42 L90 52 L100 33" fill="none" stroke="#66705f" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="hereN">0</span></button>
+  <button class="tune" id="demoBtn" aria-label="demo controls"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#66705f" stroke-width="1.5" stroke-linecap="round"><path d="M3 6h14M3 14h14"/><circle cx="7" cy="6" r="2" fill="#f2e8c9"/><circle cx="13" cy="14" r="2" fill="#f2e8c9"/></svg></button>
+</header>
+
+<div class="demo" id="demo">
+  <span class="k" style="margin-bottom:4px">demo controls</span>
+  <button data-d="in">someone opens the site</button>
+  <button data-d="out">someone leaves</button>
+  <button data-d="msg">fake Telegram message</button>
+  <button data-d="open">switch open / closed</button>
+</div>
+
+<main class="stage" id="stage">
+  <div class="track" id="track">
+    <section class="bay" id="bay0" aria-label="colombia wall"></section>
+    <section class="bay" id="bay1" aria-label="the counter and the back room"></section>
+    <section class="bay" id="bay2" aria-label="ethiopia, kenya and more"></section>
+    <div class="floor" id="floor"></div>
+    <div class="wash"></div>
+  </div>
+</main>
+
+<nav class="dock">
+  <div class="regions" id="regions"></div>
+  <button class="btn-ask" id="askBtn">ask hoa</button>
+</nav>
+
+<div class="scrim" id="scrim"></div>
+<aside class="sheet" id="sheet" aria-hidden="true">
+  <div class="grab" id="grab"><i></i></div>
+  <div class="shead"><div class="t" id="shead"></div><button class="x" id="sclose">close</button></div>
+  <div id="sslot" style="flex:1;min-height:0;display:flex;flex-direction:column"></div>
+</aside>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const track=$('track'),stage=$('stage'),sheet=$('sheet'),sslot=$('sslot');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+/* ================= DATA ================= */
+// labels Hoa sent. origin:null = still to confirm. short = name on the wall plaque
+const COFFEES={
+  granja:{short:'granja',farm:'Granja Paraíso 92',producer:'Wilton Benitez',variety:'Orange Bourbon',process:'Fermentation washed',character:['silky','velvety','sirupy'],roaster:'liquid dream.',origin:'Colombia',region:'colombia'},
+  nogales:{short:'los nogales',farm:'Los Nogales',producer:'Oscar Hernández',variety:'Bourbon Pimienta',process:'Anaerobic washed',character:['sparkling','juicy','complex'],roaster:'liquid dream.',origin:'Colombia',region:'colombia'},
+  latorre:{short:'la torre',farm:'La Torre',producer:'Marleny Imbachi',variety:'Gesha',process:'Washed',character:['juicy','delicate','floral'],roaster:'liquid dream.',origin:null,region:'colombia'},
+  girasol:{short:'girasol',farm:'El Girasol',producer:'Nicolas Medina',variety:'Pink Bourbon',process:'Washed',character:[],roaster:'SEY',origin:'Colombia',region:'colombia'},
+  casita:{short:'casita',farm:'La Casita · Curtain Call',producer:'David Berrio',variety:'Chiroso',process:'Washed',character:[],roaster:'SEY',origin:'Colombia',region:'colombia'},
+  diamante:{short:'diamante',farm:'El Diamante · Surprise Encore',producer:'Duber Mejia',variety:'Chiroso',process:'Washed',character:[],roaster:'SEY',origin:'Colombia',region:'colombia'},
+  geshe:{short:'geshe',farm:'Geshe',producer:'',variety:'Ethiopian Landrace',process:'White honey',character:[],roaster:'SEY',origin:'Ethiopia',region:'ethiopia'},
+  jaime:{short:'sánchez',farm:'Las Flores',producer:'Jaime Sánchez',variety:'Gesha',process:'Washed',character:['crisp','floral','vibrant'],roaster:'liquid dream.',origin:null,region:'more'},
+  fernando:{short:'melgar',farm:'Las Flores',producer:'Fernando Melgar',variety:'Gesha',process:'Natural',character:['velvety','smooth','floral'],roaster:'liquid dream.',origin:null,region:'more'},
+  mazateca:{short:'mazateca',farm:'Mazateca',producer:'Renato Martínez',variety:'Typica',process:'Washed',character:['juicy','winey','velvety'],roaster:'liquid dream.',origin:null,region:'more'},
+  romerillo:{short:'romerillo',farm:'El Romerillo',producer:'Clever Acosta',variety:'Sidra',process:'Washed',character:['crisp','elegant','floral'],roaster:'liquid dream.',origin:null,region:'more'},
+  panama:{short:'panamá',farm:'Digna Nuñez x Lost Origin',producer:'Digna Nuñez',variety:'Gesha',process:'Washed',character:[],roaster:'SEY',origin:'Panama',region:'more'}
+};
+const REGIONS=[['all','all'],['colombia','colombia'],['ethiopia','ethiopia'],['kenya','kenya'],['more','more origins']];
+const REGION_BAY={all:1,colombia:0,ethiopia:2,kenya:2,more:2};
+// frames per side bay, in bay units (each bay is 600 x 1100). c = coffee, e = empty frame for a region
+const WALLS=[
+  {title:'COLOMBIA',frames:[
+    {c:'granja',x:95,y:150,w:190,h:122},{c:'latorre',x:315,y:150,w:190,h:122},
+    {c:'nogales',x:95,y:346,w:190,h:122},{c:'girasol',x:315,y:346,w:190,h:122},
+    {c:'casita',x:95,y:542,w:190,h:122},{c:'diamante',x:315,y:542,w:190,h:122}]},
+  {title:'ELSEWHERE',frames:[
+    {c:'geshe',x:82,y:150,w:136,h:122},{e:'ethiopia',x:232,y:150,w:136,h:122},{e:'kenya',x:382,y:150,w:136,h:122},
+    {c:'jaime',x:82,y:346,w:136,h:122},{c:'fernando',x:232,y:346,w:136,h:122},{c:'mazateca',x:382,y:346,w:136,h:122},
+    {c:'romerillo',x:157,y:542,w:136,h:122},{c:'panama',x:307,y:542,w:136,h:122}]}
+];
+const NAMES=['mila','jonas','ece','luca','noor','sami','kai','yuki','ben','tabea'];
+const FROM=['Neukölln','Kreuzberg','Wedding','Hamburg','Milano','Lisbon','Friedrichshain','Moabit'];
+
+/* ================= HELPERS ================= */
+function toast(t,ms=2600){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),ms)}
+const isDesk=()=>innerWidth>=900;
+function setUnit(){track.style.setProperty('--u',$('bay1').offsetHeight/100+'px')}
+
+/* ================= DRAWING =================
+   flat colour, one dark line, one flat offset shadow down-left. no gradients, no texture. */
+const C={cream:'#f2e8c9',side:'#e9ddb8',ochre:'#f4b63f',tomato:'#e5603a',dark:'#13302a',shade:'#24503f',floor:'#8fa08e',green:'#2b7a5c'};
+const L=`stroke="${C.dark}" stroke-linejoin="round" stroke-linecap="round"`;
+const sh=(dx=-9,dy=8)=>`transform="translate(${dx},${dy})" fill="${C.shade}"`;
+
+function box(){ // ceiling, side walls, back wall, floor of one bay
+  let s=`<rect width="600" height="1100" fill="${C.cream}"/>`;
+  s+=`<polygon points="0,0 70,120 70,760 0,880" fill="${C.side}" ${L} stroke-width="3"/>`;
+  s+=`<polygon points="600,0 530,120 530,760 600,880" fill="${C.side}" ${L} stroke-width="3"/>`;
+  s+=`<rect x="70" y="120" width="460" height="640" fill="${C.ochre}" ${L} stroke-width="3"/>`;
+  s+=`<polygon points="0,880 70,760 530,760 600,880 600,1100 0,1100" fill="${C.floor}" ${L} stroke-width="3"/>`;
+  let t='';const vx=300,vy=330;
+  for(let x=-460;x<=1060;x+=56){const k=(1100-vy)/(760-vy);t+=`<line x1="${x}" y1="760" x2="${(vx+(x-vx)*k).toFixed(1)}" y2="1100"/>`}
+  [792,832,884,950,1030].forEach(y=>t+=`<line x1="0" y1="${y}" x2="600" y2="${y}"/>`);
+  s+=`<clipPath id="fc${box.n=(box.n||0)+1}"><polygon points="0,880 70,760 530,760 600,880 600,1100 0,1100"/></clipPath><g clip-path="url(#fc${box.n})" ${L} stroke-width="1.6" opacity=".55">${t}</g>`;
+  return s;
+}
+function title(t,y=100){
+  return `<text x="296" y="${y+5}" text-anchor="middle" font-family="Amatic SC, cursive" font-weight="700" font-size="86" letter-spacing="4" fill="${C.dark}">${t}</text>
+          <text x="300" y="${y}" text-anchor="middle" font-family="Amatic SC, cursive" font-weight="700" font-size="86" letter-spacing="4" fill="${C.tomato}">${t}</text>`;
+}
+function frame(f){
+  const reg=f.c?COFFEES[f.c].region:f.e,label=f.c?COFFEES[f.c].short:f.e,ins=20;
+  let s=`<g class="fr hit" data-r="${reg}" ${f.c?`data-c="${f.c}"`:''} tabindex="0" role="button" aria-label="${f.c?esc(COFFEES[f.c].farm):f.e+', coming soon'}">`;
+  s+=`<rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.h}" ${sh()}/>`;
+  s+=`<rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.h}" fill="${C.cream}" ${L} stroke-width="3"/>`;
+  s+=`<rect x="${f.x+8}" y="${f.y+8}" width="${f.w-16}" height="${f.h-16}" fill="none" ${L} stroke-width="1.5"/>`;
+  if(f.c){
+    s+=`<image href="img/${f.c}-art.jpg" x="${f.x+ins}" y="${f.y+ins}" width="${f.w-2*ins}" height="${f.h-2*ins}" preserveAspectRatio="xMidYMid slice"/>`;
+    s+=`<rect x="${f.x+ins}" y="${f.y+ins}" width="${f.w-2*ins}" height="${f.h-2*ins}" fill="none" ${L} stroke-width="2"/>`;
+  }else{
+    s+=`<rect x="${f.x+ins}" y="${f.y+ins}" width="${f.w-2*ins}" height="${f.h-2*ins}" fill="none" ${L} stroke-width="2" stroke-dasharray="6 5"/>`;
+    s+=`<text x="${f.x+f.w/2}" y="${f.y+f.h/2+13}" text-anchor="middle" font-family="Amatic SC, cursive" font-weight="700" font-size="40" fill="${C.dark}">soon</text>`;
+  }
+  const py=f.y+f.h+12;
+  s+=`<rect x="${f.x+12}" y="${py}" width="${f.w-24}" height="32" fill="${C.cream}" ${L} stroke-width="2"/>`;
+  s+=`<text x="${f.x+f.w/2}" y="${py+22}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-weight="500" font-size="19" fill="${C.dark}">${esc(label)}</text>`;
+  return s+'</g>';
+}
+// small objects for the counters
+const bagShape=(x,y)=>`<path d="M${x},${y+12} L${x+6},${y} L${x+38},${y} L${x+44},${y+12} L${x+44},${y+80} L${x},${y+80} Z" ${sh()}/>
+  <path d="M${x},${y+12} L${x+6},${y} L${x+38},${y} L${x+44},${y+12} L${x+44},${y+80} L${x},${y+80} Z" fill="${C.cream}" ${L} stroke-width="2.5"/>
+  <line x1="${x}" y1="${y+12}" x2="${x+44}" y2="${y+12}" ${L} stroke-width="2"/><rect x="${x+9}" y="${y+34}" width="26" height="22" fill="none" ${L} stroke-width="2"/>`;
+const cup=(x,y)=>`<path d="M${x},${y} L${x+40},${y} L${x+35},${y+36} L${x+5},${y+36} Z" ${sh()}/>
+  <path d="M${x+38},${y+8} C${x+54},${y+8} ${x+54},${y+26} ${x+36},${y+26}" fill="none" ${L} stroke-width="3"/>
+  <path d="M${x},${y} L${x+40},${y} L${x+35},${y+36} L${x+5},${y+36} Z" fill="${C.cream}" ${L} stroke-width="2.5"/>
+  <ellipse cx="${x+20}" cy="${y+40}" rx="30" ry="6" fill="${C.cream}" ${L} stroke-width="2.5"/>`;
+const plate=(cx,cy,r)=>`<ellipse cx="${cx-8}" cy="${cy+6}" rx="${r}" ry="${r}" fill="${C.shade}"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="${C.cream}" ${L} stroke-width="2.5"/><circle cx="${cx}" cy="${cy}" r="${r*.68}" fill="none" ${L} stroke-width="1.8"/>`;
+function counter(top){ // tomato block with ochre compartments, like the cabinet at the bottom of the poster
+  return `<polygon points="34,${top} 566,${top} 598,${top+34} 2,${top+34}" fill="${C.cream}" ${L} stroke-width="3"/>
+    <rect x="2" y="${top+34}" width="596" height="${960-top-34}" fill="${C.tomato}" ${L} stroke-width="3"/>`;
+}
+const comp=(x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${C.ochre}" ${L} stroke-width="2.5"/>`;
+
+function bayWall(i){
+  const w=WALLS[i];
+  let s=box()+title(w.title);
+  w.frames.forEach(f=>s+=frame(f));
+  if(i===0){ // the shelf with bags: opens the crate
+    s+=`<g class="hit" id="shelf" tabindex="0" role="button" aria-label="all coffees">${counter(800)}${comp(30,850,262,96)}${comp(308,850,262,96)}
+      ${bagShape(52,858)}${bagShape(110,858)}${bagShape(168,858)}${bagShape(226,858)}${plate(370,898,34)}${plate(450,898,34)}${cup(508,896)}</g>`;
+  }else{ // events + hours
+    s+=`<g class="hit" id="board" tabindex="0" role="button" aria-label="events and opening hours">${counter(800)}${comp(30,850,262,96)}${comp(308,850,262,96)}
+      <rect x="62" y="806" width="198" height="128" ${sh()}/><rect x="62" y="806" width="198" height="128" fill="${C.cream}" ${L} stroke-width="2.5"/>
+      <text x="161" y="830" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="500" fill="${C.dark}">SAT 14 NOV</text>
+      <text x="161" y="872" text-anchor="middle" font-family="Amatic SC, cursive" font-weight="700" font-size="40" fill="${C.tomato}">brew your</text>
+      <text x="161" y="908" text-anchor="middle" font-family="Amatic SC, cursive" font-weight="700" font-size="40" fill="${C.tomato}">own cup</text>
+      <circle cx="${380-9}" cy="${898+8}" r="40" fill="${C.shade}"/><circle cx="380" cy="898" r="40" fill="${C.cream}" ${L} stroke-width="2.5"/>
+      <line x1="380" y1="898" x2="380" y2="870" ${L} stroke-width="3"/><line x1="380" y1="898" x2="400" y2="908" ${L} stroke-width="3"/>
+      <text x="498" y="892" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="14" font-weight="500" fill="${C.dark}">TUE-FRI</text>
+      <text x="498" y="914" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="14" font-weight="500" fill="${C.dark}">8 - 16</text></g>`;
+  }
+  return s;
+}
+function bayCenter(){
+  let s=box();
+  // back room doorway: tomato frame, dark inside, the lamp hangs in it
+  s+=`<g class="hit" id="door" tabindex="0" role="button" aria-label="back room, live chat">
+    <rect x="128" y="160" width="344" height="600" ${sh()}/>
+    <rect x="128" y="160" width="344" height="600" fill="${C.tomato}" ${L} stroke-width="3"/>
+    <rect x="150" y="250" width="300" height="510" fill="${C.dark}" ${L} stroke-width="3"/>
+    <text x="297" y="221" text-anchor="middle" font-family="Amatic SC, cursive" font-weight="700" font-size="58" letter-spacing="3" fill="${C.dark}">BACK ROOM</text>
+    <text x="300" y="217" text-anchor="middle" font-family="Amatic SC, cursive" font-weight="700" font-size="58" letter-spacing="3" fill="${C.cream}">BACK ROOM</text>
+    <text x="300" y="242" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="500" letter-spacing="2.5" fill="${C.cream}" id="chatTag">● LIVE CHAT</text></g>`;
+  s+=`<g class="hit" id="lamp" tabindex="0" role="button" aria-label="ceiling light, open or closed"><rect x="268" y="252" width="64" height="150" fill="transparent"/>
+    <line x1="300" y1="252" x2="300" y2="346" stroke="${C.cream}" stroke-width="2.5"/><circle id="bulb" cx="300" cy="370" r="25" fill="${C.cream}"/></g>`;
+  s+=`<g class="hit" id="meow" tabindex="0" role="button" aria-label="meow-meow, the shop cat"><rect x="168" y="440" width="70" height="40" fill="transparent"/>
+    <g class="eyes"><path d="M176,460 Q186,448 196,460 Q186,468 176,460 Z" fill="${C.cream}"/><circle cx="187" cy="460" r="3.4" fill="${C.dark}"/>
+    <path d="M206,460 Q216,448 226,460 Q216,468 206,460 Z" fill="${C.cream}"/><circle cx="217" cy="460" r="3.4" fill="${C.dark}"/></g></g>`;
+  s+=`<g class="hit" id="hoaFig" tabindex="0" role="button" aria-label="Hoa behind the counter, ask him"><image href="img/hoa-cut.png" x="168" y="478" width="264" height="300"/></g>`;
+  s+=`<g class="hit" id="crate" tabindex="0" role="button" aria-label="all coffees">${counter(745)}
+    ${comp(26,800,172,140)}${comp(214,800,172,140)}${comp(402,800,172,140)}
+    ${bagShape(40,846)}${bagShape(90,846)}${bagShape(140,846)}
+    <line x1="214" y1="872" x2="386" y2="872" ${L} stroke-width="2.5"/>${cup(232,826)}${cup(316,826)}${plate(262,912,22)}${plate(300,912,22)}${plate(338,912,22)}
+    ${plate(450,872,40)}${plate(530,880,30)}</g>`;
+  s+=`<g class="hit" id="floorLogo" tabindex="0" role="button" aria-label="about antibarist">
+    <polygon points="70,984 530,984 558,1042 42,1042" ${sh()}/>
+    <polygon points="70,984 530,984 558,1042 42,1042" fill="${C.tomato}" ${L} stroke-width="3"/>
+    <text transform="translate(300,1031) scale(1,.55)" text-anchor="middle" font-family="Amatic SC, cursive" font-weight="700" font-size="112" textLength="400" lengthAdjust="spacingAndGlyphs" fill="${C.cream}">ANTIBARIST</text></g>`;
+  return s;
+}
+const svg=(inner)=>`<svg viewBox="0 0 600 1100" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+$('bay0').innerHTML=svg(bayWall(0));
+$('bay1').innerHTML=svg(bayCenter());
+$('bay2').innerHTML=svg(bayWall(1));
+
+const act=(el,fn)=>{el.addEventListener('click',e=>{e.stopPropagation();fn(e)});el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fn(e)}})};
+track.querySelectorAll('.fr').forEach(el=>act(el,()=>{
+  if(el.dataset.c)openCoffee(el.dataset.c);
+  else toast(el.dataset.r==='kenya'?'no kenya on the wall right now. Hoa posts new coffees in the back room first.':'more from '+el.dataset.r+' soon');
+}));
+act($('door'),()=>openChat());
+act($('lamp'),()=>toggleOpen());
+act($('hoaFig'),()=>openAsk());
+act($('crate'),()=>openCrate());
+act($('shelf'),()=>openCrate());
+act($('board'),()=>openEvents());
+act($('floorLogo'),()=>openAbout());
+act($('meow'),()=>showPop($('meow'),`<div class="t">meow-meow</div><p>lives in the back room. you mostly see her eyes. the tip jar is hers.</p><button class="act" id="treat">give a treat</button>`,()=>{$('treat').onclick=()=>{closePop();toast('thank you · in the real version this is a €1 tip for Hoa')}}));
+
+function goBay(i,smooth=true){
+  const b=$('bay'+i);
+  stage.scrollTo({left:b.offsetLeft-(stage.clientWidth-b.offsetWidth)/2,behavior:smooth?'smooth':'auto'});
+}
+
+/* ================= REGIONS ================= */
+let region='all';
+function renderRegions(){
+  const n=r=>r==='all'?Object.keys(COFFEES).length:Object.values(COFFEES).filter(c=>c.region===r).length;
+  $('regions').innerHTML=REGIONS.map(([r,t])=>`<button class="rg ${region===r?'on':''}" data-r="${r}">${t}<sup>${n(r)||'soon'}</sup></button>`).join('');
+  $('regions').querySelectorAll('.rg').forEach(b=>b.onclick=()=>setRegion(b.dataset.r));
+}
+function setRegion(r){
+  region=(region===r&&r!=='all')?'all':r;
+  track.classList.toggle('filtering',region!=='all');
+  track.querySelectorAll('.fr').forEach(f=>f.classList.toggle('on',f.dataset.r===region));
+  renderRegions();
+  goBay(REGION_BAY[region]);
+}
+
+/* ================= SHEET ================= */
+let sheetName=null;
+function openSheet(head,body,o={}){
+  $('shead').innerHTML=head;sslot.innerHTML=body;
+  sheet.classList.toggle('short',!!o.short);
+  sheet.classList.add('open');sheet.setAttribute('aria-hidden','false');$('scrim').classList.add('on');
+  sheetName=o.name||null;closePop();
+}
+function closeSheet(){sheet.classList.remove('open');sheet.setAttribute('aria-hidden','true');$('scrim').classList.remove('on');sheetName=null}
+$('sclose').onclick=closeSheet;$('scrim').onclick=closeSheet;
+addEventListener('keydown',e=>{if(e.key==='Escape'){closeSheet();closePop()}});
+(()=>{let y0=null,dy=0;const g=$('grab');
+ g.addEventListener('pointerdown',e=>{y0=e.clientY;dy=0;g.setPointerCapture(e.pointerId);sheet.style.transition='none'});
+ g.addEventListener('pointermove',e=>{if(y0===null)return;dy=Math.max(0,e.clientY-y0);sheet.style.transform=`translateY(${dy}px)`});
+ g.addEventListener('pointerup',()=>{sheet.style.transition='';sheet.style.transform='';if(dy>80)closeSheet();y0=null});
+})();
+const head=(k,t,sub)=>`<div class="k">${k}</div><h2>${t}</h2>${sub?`<div class="sub">${sub}</div>`:''}`;
+
+/* ================= COFFEE ================= */
+let bag=0;
+function openCoffee(id){
+  const c=COFFEES[id];
+  const body=`<div class="sbody">
+    <div class="labelimg"><img src="img/${id}-label.jpg" alt="${esc(c.roaster)} label"></div>
+    ${c.character.length?`<div class="char">${c.character.join(' · ')}</div>`:''}
+    <dl class="rows">
+      <div><dt>roaster</dt><dd>${esc(c.roaster)}</dd></div>
+      <div><dt>origin</dt><dd>${c.origin||'<span class="tbc">to confirm</span>'}</dd></div>
+      <div><dt>variety</dt><dd>${esc(c.variety)}</dd></div>
+      <div><dt>process</dt><dd>${esc(c.process)}</dd></div>
+    </dl>
+    <div class="rule"></div>
+    <div class="k" style="margin-bottom:6px">Hoa's note</div>
+    <div class="quote">"${c.variety.includes('Gesha')?'light and flowery. drink it black and let it cool a bit.':/anaerobic|ferment/i.test(c.process)?'a wild one. try it as filter first.':'clean and sweet. a good place to start.'}"</div>
+    <div class="k" style="margin:4px 0 0">how he brews it</div>
+    <div class="recipe"><div><b>15g</b>coffee</div><div><b>250g</b>water</div><div><b>93°</b>temp</div><div><b>2:45</b>time</div></div>
+    <p class="note-ph">note, recipe and price are placeholders for Hoa to fill in</p>
+    <div class="acts"><button class="primary" id="addBag">add to bag</button><button class="link" id="askHoa">ask Hoa about this coffee</button></div>
+  </div>`;
+  openSheet(head((c.origin||'origin to confirm')+' · '+c.roaster,esc(c.farm),c.producer?esc(c.producer):''),body,{name:'coffee'});
+  $('addBag').onclick=()=>{bag++;toast(`added (${bag}) · checkout comes in a later version`)};
+  $('askHoa').onclick=()=>openChat(`hey Hoa, how do you brew the ${c.farm}?`);
+}
+
+/* ================= CRATE ================= */
+function openCrate(f='all'){
+  const ids=Object.keys(COFFEES).filter(id=>f==='all'||COFFEES[id].region===f);
+  const body=`<div class="sbody"><div class="filters">${REGIONS.filter(r=>r[0]!=='kenya').map(([r,t])=>`<button class="rg ${f===r?'on':''}" data-f="${r}">${t}</button>`).join('')}</div>
+    <div class="crate">${ids.map(id=>{const c=COFFEES[id];return `<button class="card" data-id="${id}"><div class="im" style="background-image:url(img/${id}-art.jpg)"></div><b>${esc(c.farm)}</b><span>${esc(c.origin||'origin tbc')} · ${esc(c.roaster)}</span></button>`}).join('')}</div></div>`;
+  openSheet(head('the crate','everything on the wall',`${Object.keys(COFFEES).length} coffees`),body);
+  sslot.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>openCrate(b.dataset.f));
+  sslot.querySelectorAll('.card').forEach(b=>b.onclick=()=>openCoffee(b.dataset.id));
+}
+
+/* ================= EVENTS / ABOUT ================= */
+const HOURS=[['Mon','closed'],['Tue','8 - 16'],['Wed','8 - 16'],['Thu','8 - 16'],['Fri','8 - 16'],['Sat','9 - 17'],['Sun','closed']];
+function openEvents(){
+  const idx=(berlin().day+6)%7;
+  const body=`<div class="sbody">
+   <div class="ev"><div class="k">sat 14 nov · 12 - 18 · the playce at studio 5</div><h4>Antibarist x Luko<br>brew your own cup</h4><p>the biggest coffee selection in Berlin. pick a bean, pick a brewer, make your own cup.</p><button class="link" onclick="toast('saved · in the real version this goes to your calendar')">I'm coming</button></div>
+   <div class="ev"><div class="k">every few weeks</div><h4>cupping club</h4><p>5 to 8 coffees side by side, no experience needed. the next date is posted in the back room.</p></div>
+   <div class="k" style="margin-bottom:4px">opening hours · Frameworks Berlin, Kreuzberg</div>
+   <table class="hours">${HOURS.map((d,i)=>`<tr class="${i===idx?'today':''}"><td>${d[0]}${i===idx?' · today':''}</td><td>${d[1]}</td></tr>`).join('')}</table></div>`;
+  openSheet(head('the counter',"what's on"),body);
+}
+function openAbout(){
+  const body=`<div class="sbody">
+   <div class="quote">"What is good coffee? This question has been following me since my early days."</div>
+   <div class="k">Hoa</div>
+   <div class="rule"></div>
+   <p>Hoa started at a place where nobody cared about the coffee. The service was warm, the coffee was not. So he did his own research, visited the coffee shops people recommended, and made up his own mind.</p>
+   <p>Antibarist is the result: a specialty coffee popup inside Frameworks Berlin, a framing shop in Kreuzberg. A space to share what he finds with others, over coffee.</p>
+   <div class="rule"></div>
+   <p style="color:var(--mute)">the eyes in the back room belong to meow-meow, she lives here. every line cat is a real person on this site right now. the navy one is you.</p>
+   <div class="acts" style="margin-top:14px"><a class="primary" href="https://t.me/antibarist" target="_blank" rel="noopener">join on telegram</a></div></div>`;
+  openSheet(head('about','not your typical barista'),body);
+}
+
+/* ================= ASK HOA ================= */
+const Q=[
+  {q:'how do you make coffee at home?',a:[['espresso machine','esp'],['filter: V60, Chemex, AeroPress','fil'],['moka pot','moka'],["I don't. I come here.",'any']]},
+  {q:'what do you want to taste?',a:[['fruit. berries, citrus, juice','fruit'],['flowers. jasmine, tea','floral'],['sweet. chocolate, caramel','sweet'],['surprise me','any']]},
+  {q:'how wild can it be?',a:[['keep it clean and classic','clean'],['a little funky is fine','funky1'],['the weirder the better','funky2']]},
+  {q:'light like tea, or heavy and syrupy?',a:[['light','light'],['somewhere in between','mid'],['heavy','heavy']]}
+];
+function tags(c){
+  const t=new Set(),w=c.character.join(' ');
+  if(/juicy|vibrant|sparkling|winey|crisp/.test(w))t.add('fruit');
+  if(/floral|delicate|elegant/.test(w))t.add('floral');
+  if(/silky|velvety|smooth|sirupy/.test(w))t.add('sweet');
+  if(/crisp|delicate|elegant|vibrant/.test(w))t.add('light');
+  if(/sirupy|silky|winey|complex/.test(w))t.add('heavy');
+  if(!c.character.length){ // no words on the label: go by variety
+    if(/Gesha|Chiroso|Landrace/.test(c.variety)){t.add('floral');t.add('light')}
+    if(/Pink Bourbon|Chiroso|Landrace/.test(c.variety))t.add('fruit');
+  }
+  const p=c.process.toLowerCase();
+  t.add(/anaerobic|ferment/.test(p)?'funky2':/natural|honey/.test(p)?'funky1':'clean');
+  return t;
+}
+let answers=[];
+function openAsk(step=-1){
+  const face=`<div class="hoa-head"><img src="img/hoa-cut.png" alt=""><div><div style="font:700 24px/1 var(--title)">Hoa</div><div class="k">behind the counter</div></div></div>`;
+  if(step===-1){
+    answers=[];
+    openSheet(head('ask hoa','what is good coffee?'),`<div class="sbody">${face}<p>No milk questions. Just four questions about what you like, then I tell you which coffee on the wall to try.</p><div class="acts" style="margin-top:18px"><button class="primary" id="go">start</button></div></div>`,{short:1});
+    $('go').onclick=()=>openAsk(0);return;
+  }
+  if(step===Q.length)return askResult();
+  const q=Q[step];
+  openSheet(head('ask hoa',`question ${step+1} of ${Q.length}`),`<div class="sbody">${face}<div class="prog">${Q.map((_,i)=>`<i class="${i<=step?'on':''}"></i>`).join('')}</div><div class="say">${q.q}</div><div class="opts">${q.a.map(a=>`<button data-v="${a[1]}">${a[0]}</button>`).join('')}</div></div>`,{short:1});
+  sslot.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{answers[step]=b.dataset.v;openAsk(step+1)});
+}
+function askResult(){
+  const [brew,taste,wild,body]=answers;
+  const scored=Object.entries(COFFEES).map(([id,c])=>{
+    const t=tags(c);let s=Math.random()*.3;
+    if(taste!=='any'&&t.has(taste))s+=3;
+    if(t.has(wild))s+=2; else if(wild==='funky2'&&t.has('funky1'))s+=1;
+    if(body==='light'&&t.has('light'))s+=1.5;
+    if(body==='heavy'&&t.has('heavy'))s+=1.5;
+    if(body==='mid'&&!t.has('light')&&!t.has('heavy'))s+=1;
+    if((brew==='esp'||brew==='moka')&&(t.has('sweet')||t.has('heavy')))s+=1;
+    if(brew==='fil'&&(t.has('floral')||t.has('light')))s+=1;
+    return {id,c,s};
+  }).sort((a,b)=>b.s-a.s);
+  const top=scored[0],more=scored.slice(1,3);
+  const why={fruit:'It tastes like fruit',floral:'It is light and flowery',sweet:'It is sweet and round',any:'It is one of my favourites right now'}[taste];
+  const how={esp:'pull it as espresso',fil:'brew it as filter',moka:'it works on a moka pot',any:'come by and I make it for you'}[brew];
+  const body2=`<div class="sbody">
+    <div class="labelimg"><img src="img/${top.id}-label.jpg" alt=""></div>
+    <div class="quote">"Try ${esc(top.c.farm)}. ${why}, and ${how}."</div><div class="k">Hoa</div>
+    <div class="acts" style="margin:18px 0 22px"><button class="primary" id="seeTop">see this coffee</button><button class="link" id="talk">talk to Hoa about it</button></div>
+    <div class="k" style="margin-bottom:4px">also try</div>
+    ${more.map(m=>`<button class="pick" data-id="${m.id}"><div class="im" style="background-image:url(img/${m.id}-art.jpg)"></div><div><b>${esc(m.c.farm)}</b><span>${esc(m.c.variety)} · ${esc(m.c.process)}</span></div></button>`).join('')}
+    <button class="link" id="again" style="margin-top:14px">ask again</button></div>`;
+  openSheet(head('ask hoa','your coffee'),body2);
+  $('seeTop').onclick=()=>openCoffee(top.id);$('again').onclick=()=>openAsk(0);
+  $('talk').onclick=()=>openChat(`hey Hoa, you told me to try the ${top.c.farm}. `);
+  sslot.querySelectorAll('.pick').forEach(b=>b.onclick=()=>openCoffee(b.dataset.id));
+}
+
+/* ================= CHAT ================= */
+const TOPICS=[['Café Window',1],['Cupping Club'],['Brewing Recipes'],['Coffee Review'],['Beanexchange'],['Coffee Memes']];
+let myName=null;
+let log=[
+  {sys:'this is the Café Window topic of the Antibarist Telegram group. messages go both ways.'},
+  {who:'mila',t:'is the Granja Paraíso still there? it tasted like orange juice',at:'09:41'},
+  {who:'Hoa',t:'yes, 3 bags left. come before saturday',at:'09:44',hoa:1},
+  {who:'jonas',t:'who is going to brew your own cup on the 14th?',at:'10:12'},
+  {who:'ece',t:'me. bringing my own grinder',at:'10:15'}
+];
+let unread=0;
+const hm=()=>{const b=berlin();return String(b.h).padStart(2,'0')+':'+String(b.m).padStart(2,'0')};
+const msgHTML=m=>m.sys?`<div class="sys">${esc(m.sys)}</div>`:`<div class="m ${m.hoa?'h':''} ${m.me?'me':''}"><div class="who">${esc(m.who)} · ${m.at}${m.me?' · sent':''}</div>${esc(m.t)}</div>`;
+function openChat(prefill=''){
+  unread=0;badge();
+  const n=cats.filter(c=>!c.you).length;
+  const body=`<div class="topics">${TOPICS.map((t,i)=>`<button class="topic ${i===0?'on':''}" data-i="${i}">${t[0]}</button>`).join('')}</div>
+   <div class="chat" id="chat">${log.map(msgHTML).join('')}</div>
+   <form class="compose" id="compose"><input id="cin" placeholder="write to Hoa and the group" autocomplete="off" enterkeyhint="send"><button>send</button></form>`;
+  openSheet(head('live · linked to telegram','the back room',`Hoa + ${n} people here now`),body,{name:'chat'});
+  $('chat').scrollTop=1e6;
+  const cin=$('cin');cin.value=prefill;if(isDesk())setTimeout(()=>cin.focus(),400);
+  $('compose').onsubmit=e=>{e.preventDefault();const v=cin.value.trim();if(!v)return;cin.value='';
+    push({who:myName||'you',t:v,at:hm(),me:1});youCat&&youCat.say(v.length>18?v.slice(0,16)+'…':v);reply(v)};
+  sslot.querySelectorAll('.topic').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i;if(i===0)return openChat();
+    sslot.querySelectorAll('.topic').forEach(x=>x.classList.toggle('on',x===b));
+    $('chat').innerHTML=`<div class="locked"><div class="quote">${TOPICS[i][0]}</div><p style="color:var(--mute)">members only. this topic stays inside Telegram.</p><a class="primary" href="https://t.me/antibarist" target="_blank" rel="noopener" style="margin-top:18px">join 120 people on telegram</a></div>`;
+    $('compose').style.display='none';
+  });
+}
+function push(m){
+  log.push(m);
+  if(sheetName==='chat'&&$('chat')){$('chat').insertAdjacentHTML('beforeend',msgHTML(m));$('chat').scrollTop=1e6}
+  else if(!m.me){unread++;badge()}
+}
+function badge(){$('chatTag').textContent=unread>0?`● LIVE CHAT · ${unread} NEW`:'● LIVE CHAT'}
+function typing(name,ms,cb){
+  setTimeout(()=>{if($('chat')){$('chat').insertAdjacentHTML('beforeend',`<div class="typing" id="typ">${name} is typing</div>`);$('chat').scrollTop=1e6}},600);
+  setTimeout(()=>{$('typ')&&$('typ').remove();cb()},ms);
+}
+function reply(q){
+  const s=q.toLowerCase(),at=(s.match(/@(\w+)/)||[])[1],mate=at&&cats.find(c=>c.name===at);
+  if(mate){typing(mate.name,2600,()=>{push({who:mate.name,t:pick(['hey, nice to meet you here','hi! are you at Frameworks right now?','hello. have you tried the Granja Paraíso?']),at:hm()});mate.say('hi')});return}
+  let a;
+  if(/oat|milk|cow/.test(s))a='both work. but for the fruity ones, try it without milk first';
+  else if(/open|hour|when|today|close/.test(s))a=berlin().open?'open right now, come by':'closed right now. tue to fri 8-16, sat 9-17';
+  else if(/fruit|recommend|which|best|suggest|try/.test(s))a='fruity: Los Nogales. flowery: Las Flores. sweet: Granja Paraíso';
+  else if(/brew|recipe|grind|v60|how/.test(s))a='15g coffee, 250g water, 93 degrees, around 2:45. then taste and adjust';
+  else if(/cat|meow/.test(s))a='meow-meow is the real boss here';
+  else if(/^(hi|hey|hello|hallo|moin|ciao)/.test(s))a='hey, welcome to the back room';
+  else a='good question, give me a minute. or ask me at the counter';
+  typing('Hoa',2600,()=>push({who:'Hoa',t:a,at:hm(),hoa:1}));
+}
+const RANDOM=[['mila','just got the SEY El Girasol, smells crazy'],['luca','cupping club next week?'],['Hoa','new on the wall: SEY Geshe from Ethiopia',1],['jonas','meow-meow is sleeping on my jacket again'],['Hoa','batch brew is ready',1]];
+function randomMsg(){const r=pick(RANDOM);push({who:r[0],t:r[1],at:hm(),hoa:r[2]});if(sheetName!=='chat')toast('new message in the back room',1800)}
+setInterval(()=>{if(Math.random()<.4)randomMsg()},32000);
+$('askBtn').onclick=()=>openAsk();
+
+/* ================= OPEN / CLOSED ================= */
+function berlin(){
+  const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Berlin',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()).map(x=>[x.type,x.value]));
+  const day=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(p.weekday),h=+p.hour%24,m=+p.minute,t=h+m/60;
+  let open=false,close=0;
+  if(day>=2&&day<=5&&t>=8&&t<16){open=true;close=16}
+  if(day===6&&t>=9&&t<17){open=true;close=17}
+  return {day,h,m,open,close};
+}
+let forced=null;
+const nextOpen=d=>(d===6||d===0||d===1)?'tue 8:00':(berlin().h<8?'today 8:00':'tomorrow 8:00');
+function applyOpen(){
+  const b=berlin(),open=forced===null?b.open:forced;
+  document.body.classList.toggle('closed',!open);
+  $('statusTxt').innerHTML=open?`<b>open</b>${forced===null?'till '+b.close+':00':'Hoa is in'}`:`<b>closed</b>back ${nextOpen(b.day)}`;
+}
+function toggleOpen(){forced=document.body.classList.contains('closed');applyOpen();toast(forced?'lights on · Hoa is in':'lights off · closed')}
+
+
+/* ================= CATS ================= */
+// every cat is a visitor. x = % of the floor strip width (all three bays), y = % of the floor strip height
+const CAT=`<svg viewBox="0 0 140 60"><g class="flip">
+ <path d="M8 36 L12 16 L18 27 L23 14 L27 28 L100 28"/>
+ <g class="tail"><path d="M100 28 L137 10 L134 17 L100 33"/></g>
+ <g class="la"><path d="M8 36 L18 38 L14 52 L22 44 L24 54 L30 38 L84 34 L80 50 L88 42 L90 52 L100 33"/></g>
+ <g class="lb"><path d="M8 36 L18 38 L22 52 L25 44 L31 54 L33 38 L86 34 L93 50 L95 42 L99 52 L100 33"/></g>
+ <g class="ls"><path d="M8 36 L18 38 L19 44 L32 44 L34 38 L84 34 L85 42 L98 42 L100 33"/></g>
+</g></svg>`;
+const Y0=64,Y1=88;
+let cats=[],youCat=null,popFor=null;
+class Cat{
+  constructor(o={}){
+    this.you=!!o.you;const used=cats.map(c=>c.name);
+    this.name=this.you?'you':(pick(NAMES.filter(n=>!used.includes(n)))||'guest');this.from=pick(FROM);
+    this.x=o.x??(6+Math.random()*88);this.y=Y0+Math.random()*(Y1-Y0);
+    this.el=document.createElement('button');this.el.className='cat sit'+(this.you?' you':'');
+    this.el.innerHTML=CAT+`<span class="nm">${this.name}</span>`;
+    this.el.onclick=e=>{e.stopPropagation();this.you?youPop():matePop(this)};
+    $('floor').appendChild(this.el);
+    this.wait=1500+Math.random()*4000;this.target=null;this.speed=1.2+Math.random()*1.2;
+    if(o.enter){this.x=-4;this.go(4+Math.random()*30,this.y)}
+    this.place();
+  }
+  place(){
+    const s=.85+.3*(this.y-Y0)/(Y1-Y0);
+    Object.assign(this.el.style,{left:this.x+'%',top:this.y+'%',width:`calc(var(--u) * ${10*s})`,zIndex:Math.round(this.y)});
+  }
+  go(x,y){this.target={x,y};this.el.classList.remove('sit');this.el.classList.add('walk');this.el.classList.toggle('right',x>this.x)}
+  say(t,ms=1800){const b=this.el.querySelector('.nm');b.textContent=t;clearTimeout(this.st);this.st=setTimeout(()=>b.textContent=this.you?(myName||'you'):this.name,ms)}
+  tick(dt){
+    if(this===popFor)return;
+    if(!this.target){
+      if(this.leaving){this.el.remove();cats=cats.filter(c=>c!==this);here();return}
+      this.wait-=dt;if(this.wait<=0){
+        // mostly stroll nearby, sometimes walk over to another bay
+        const far=Math.random()<.25,nx=far?6+Math.random()*88:Math.max(3,Math.min(97,this.x+(Math.random()-.5)*24));
+        this.go(nx,Y0+Math.random()*(Y1-Y0))}
+      return;
+    }
+    const dx=this.target.x-this.x,dy=this.target.y-this.y,d=Math.hypot(dx,dy),st=this.speed*dt/1000;
+    if(d<=st){this.x=this.target.x;this.y=this.target.y;this.target=null;this.el.classList.remove('walk');this.el.classList.add('sit');this.wait=(document.body.classList.contains('closed')?9000:4000)+Math.random()*7000}
+    else{this.x+=dx/d*st;this.y+=dy/d*st}
+    this.place();
+  }
+  leave(){this.leaving=true;this.go(this.x<50?-6:106,this.y)}
+}
+const here=()=>$('hereN').textContent=cats.length;
+function addCat(o){const c=new Cat(o);cats.push(c);here();return c}
+
+/* ================= POPUPS ================= */
+let popEl=null;
+function showPop(anchor,html,after){
+  closePop();popEl=document.createElement('div');popEl.className='pop';popEl.innerHTML=html;popEl.onclick=e=>e.stopPropagation();track.appendChild(popEl);
+  const r=anchor.getBoundingClientRect(),tr=track.getBoundingClientRect(),half=popEl.offsetWidth/2+10;
+  const x=r.left+r.width/2-tr.left,minX=stage.scrollLeft+half,maxX=stage.scrollLeft+stage.clientWidth-half;
+  popEl.style.left=Math.max(minX,Math.min(maxX,x))+'px';
+  popEl.style.top=Math.max(popEl.offsetHeight+12,r.top-tr.top-8)+'px';
+  after&&after();
+}
+function closePop(){popEl&&popEl.remove();popEl=null;popFor=null}
+track.addEventListener('click',closePop);
+function matePop(c){
+  showPop(c.el,`<div class="t">${c.name}</div><p>from ${c.from} · ${pick(['looking at the wall','in the back room','flipping through the crate','just walked in'])}</p><button class="act" id="hi">say hi</button>`,()=>{$('hi').onclick=()=>{closePop();openChat('@'+c.name+' ')}});
+  popFor=c;c.el.classList.remove('walk');c.el.classList.add('sit');
+}
+function youPop(){
+  showPop(youCat.el,`<div class="t">this is you</div><p>pick a name so people in the back room know who you are.</p><input id="nm" maxlength="14" placeholder="your name" value="${myName?esc(myName):''}"><button class="act" id="saveNm">save</button>`,()=>{
+    $('saveNm').onclick=()=>{const v=$('nm').value.trim().toLowerCase().replace(/[^\p{L}\p{N}_]/gu,'').slice(0,14);if(v){myName=v;youCat.el.querySelector('.nm').textContent=v}closePop()};
+  });
+  popFor=youCat;
+}
+
+/* ================= BOOT ================= */
+let last=performance.now();
+function loop(t){const dt=Math.min(60,t-last);last=t;cats.forEach(c=>c.tick(dt));requestAnimationFrame(loop)}
+$('demoBtn').onclick=e=>{e.stopPropagation();$('demo').classList.toggle('on')};
+document.addEventListener('click',e=>{if(!$('demo').contains(e.target))$('demo').classList.remove('on')});
+$('demo').querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{
+  const d=b.dataset.d;
+  if(d==='in'){const c=addCat({enter:true});toast(c.name+' opened the site')}
+  if(d==='out'){const c=cats.find(c=>!c.you&&!c.leaving);if(c){c.leave();toast(c.name+' left')}}
+  if(d==='msg')randomMsg();
+  if(d==='open')toggleOpen();
+  $('demo').classList.remove('on');
+});
+$('hereBtn').onclick=()=>{toast(`${cats.length} people on the site right now. tap a cat to say hi.`);youCat.say('this is you',2200)};
+addEventListener('resize',()=>{setUnit();if(!isDesk())goBay(REGION_BAY[region],false)});
+
+function boot(){
+  setUnit();renderRegions();
+  goBay(1,false);
+  youCat=addCat({you:true,x:50});
+  const n=2+Math.floor(Math.random()*2);for(let i=0;i<n;i++)addCat();
+  applyOpen();setInterval(applyOpen,60000);requestAnimationFrame(loop);
+  setTimeout(()=>{unread=2;badge()},5000);
+  setInterval(()=>{const r=Math.random();if(r<.25&&cats.length<6)addCat({enter:true});else if(r>.85&&cats.length>3){const c=cats.find(c=>!c.you&&!c.leaving&&c!==popFor);c&&c.leave()}},18000);
+}
+document.fonts?document.fonts.ready.then(boot):boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fbf9f3">
+<title>Antibarist · prototype v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#fbf9f3; --ink:#1b1b1b; --mute:#8b877d; --line:#e4e0d6;
+  --navy:#14295c; --yellow:#f3e23b;
+  --title:'Amatic SC',cursive; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --top:48px; --dock:104px;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--paper);color:var(--ink);font:400 13px/1.55 var(--mono);overflow:hidden;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:inherit}
+a{color:inherit}
+img{display:block}
+.k{font:500 10.5px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute)}
+
+/* top */
+.top{position:fixed;inset:0 0 auto 0;height:calc(var(--top) + var(--sat));padding:var(--sat) 14px 0;display:flex;align-items:center;gap:12px;z-index:40;background:var(--paper)}
+.logo{background:var(--navy);color:var(--yellow);font:700 20px/1 var(--title);letter-spacing:2px;padding:5px 11px 3px;position:relative;flex:none}
+.logo i{font-style:normal;font-size:10px;position:absolute;left:3px;top:1px}
+.logo i+i{left:auto;top:auto;right:3px;bottom:0;transform:rotate(180deg)}
+.status{white-space:nowrap;font-size:11px;line-height:1.25;color:var(--mute);display:flex;align-items:center;gap:7px}
+.status .d{width:6px;height:6px;border-radius:50%;background:#2fb95a;flex:none}
+body.closed .status .d{background:#d9442f}
+.status b{font-weight:500;color:var(--ink);display:block}
+.sp{flex:1}
+.here{font-size:11px;color:var(--mute);display:flex;align-items:center;gap:6px}
+.here svg{width:22px;height:11px}
+.tune{width:28px;height:28px;display:grid;place-items:center}
+
+/* stage */
+.stage{position:fixed;left:0;right:0;top:calc(var(--top) + var(--sat));bottom:calc(var(--dock) + var(--sab));overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.stage::-webkit-scrollbar{display:none}
+.room{position:relative;height:100%;aspect-ratio:928/1232;margin:0 auto;font-size:var(--u,5px)}
+.room>img.bg{position:absolute;inset:0;width:100%;height:100%;user-select:none;-webkit-user-drag:none;pointer-events:none}
+.night{position:absolute;inset:0;background:var(--navy);mix-blend-mode:multiply;opacity:0;transition:opacity .8s;pointer-events:none;z-index:30}
+body.closed .night{opacity:0}
+
+/* framed prints: white passe-partout + clean art */
+.fr{position:absolute;background:#fff;cursor:pointer;transition:opacity .3s,filter .3s}
+.fr .art{position:absolute;inset:14%;background-size:cover;background-position:center;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.fr.wide .art{inset:16% 10%}
+.fr.empty{cursor:default}
+.fr.empty .art{display:none}
+.room.filtering .fr:not(.on){filter:grayscale(1);opacity:.25}
+.wall-label{position:absolute;z-index:6;font:700 4.2em/1 var(--title);color:var(--navy);letter-spacing:.04em;pointer-events:none;transition:opacity .3s;white-space:nowrap}
+.wall-label small{font:400 .42em var(--mono);color:var(--mute);letter-spacing:.08em;margin-left:.4em;vertical-align:middle;text-transform:uppercase}
+.room.filtering .wall-label:not(.on){opacity:.2}
+
+/* back room sign */
+.door{position:absolute;cursor:pointer;z-index:8}
+.sign{position:absolute;left:50%;top:9%;transform:translateX(-50%);background:var(--navy);color:var(--yellow);padding:.7em 1.4em .6em;text-align:center;white-space:nowrap}
+.sign::before,.sign::after{content:"";position:absolute;top:-2.6em;height:2.6em;width:1px;background:#333;left:20%}
+.sign::after{left:auto;right:20%}
+.sign b{display:block;font:700 5em/.95 var(--title);letter-spacing:.06em}
+.sign span{display:flex;align-items:center;justify-content:center;gap:.5em;font:400 1.9em/1 var(--mono);color:#cfd6ea;letter-spacing:.08em;text-transform:uppercase;margin-top:.3em}
+.sign span i{width:.6em;height:.6em;border-radius:50%;background:#2fb95a}
+
+/* hoa behind the counter */
+.hoa{position:absolute;left:40.4%;top:41.6%;width:21%;height:17.2%;overflow:hidden;cursor:pointer;z-index:7}
+.hoa img{width:100%;height:auto}
+.askme{position:absolute;left:28.6%;top:46.6%;z-index:9;font:700 4.2em/1 var(--title);color:var(--navy);pointer-events:none;transform:rotate(-6deg)}
+.askme::after{content:"";position:absolute;right:-1.3em;top:.6em;width:1em;border-top:1px solid var(--navy)}
+
+.hs{position:absolute;cursor:pointer}
+.meow{position:absolute;left:20.91%;top:50.49%;width:10.02%;height:8.36%;cursor:pointer;z-index:12;transform-origin:50% 100%;animation:breathe 3.6s ease-in-out infinite}
+.meow img{width:100%;height:100%}
+@keyframes breathe{50%{transform:scaleY(1.02)}}
+
+/* cats */
+.cat{position:absolute;transform-origin:50% 100%;z-index:15;cursor:pointer}
+.cat svg{width:100%;height:auto;overflow:visible}
+.cat svg path{fill:none;stroke:#1b1b1b;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.cat.you svg path{stroke:#3e4fd6}
+.cat .flip{transform-box:fill-box;transform-origin:center}
+.cat.right .flip{transform:scaleX(-1)}
+.cat .lb,.cat .ls{display:none}
+.cat.walk .la{animation:la .38s steps(1) infinite}
+.cat.walk .lb{display:inline;animation:lb .38s steps(1) infinite}
+@keyframes la{50%{opacity:0}}
+@keyframes lb{0%{opacity:0}50%{opacity:1}}
+.cat.sit .la{display:none}.cat.sit .ls{display:inline}
+.cat .tail{transform-box:view-box;transform-origin:100px 31px;animation:tail 2.4s ease-in-out infinite}
+@keyframes tail{50%{transform:rotate(-8deg)}}
+.cat .nm{position:absolute;left:50%;top:100%;transform:translateX(-50%);font:400 1.9em/1 var(--mono);color:var(--mute);white-space:nowrap;letter-spacing:.04em}
+.cat.you .nm{color:#3e4fd6}
+
+.pop{position:absolute;z-index:35;background:var(--paper);border:1px solid var(--ink);padding:2.4em 2.8em 2.6em;width:46em;transform:translate(-50%,-100%)}
+.pop .t{font:700 5.4em/1 var(--title)}
+.pop p{font:400 2.4em/1.45 var(--mono);color:var(--mute);margin:.3em 0 .9em}
+.pop input{font:400 2.6em var(--mono);border:0;border-bottom:1px solid var(--ink);width:100%;padding:.3em 0;margin-bottom:.8em;background:transparent;outline:0}
+.pop .act{font:500 2.3em/1 var(--mono);text-transform:uppercase;letter-spacing:.1em;background:var(--navy);color:var(--yellow);padding:.8em 1.2em}
+
+/* dock */
+.dock{position:fixed;left:0;right:0;bottom:0;height:calc(var(--dock) + var(--sab));padding:0 14px calc(12px + var(--sab));z-index:40;background:var(--paper);border-top:1px solid var(--line);display:flex;flex-direction:column;justify-content:space-between}
+.regions{display:flex;gap:18px;overflow-x:auto;scrollbar-width:none;padding:11px 0 0}
+.regions::-webkit-scrollbar{display:none}
+.rg{flex:none;font:500 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute);padding-bottom:5px;border-bottom:1px solid transparent}
+.rg.on{color:var(--ink);border-color:var(--ink)}
+.rg sup{font-size:9px;margin-left:2px}
+.dock-row{display:flex;gap:8px}
+.btn-room{flex:1;background:var(--navy);color:var(--yellow);display:flex;align-items:center;justify-content:space-between;padding:9px 14px 8px}
+.btn-room b{font:700 25px/1 var(--title);letter-spacing:.06em}
+.btn-room span{font:400 10px/1 var(--mono);color:#cfd6ea;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:6px}
+.btn-room span i{width:6px;height:6px;border-radius:50%;background:#2fb95a}
+.btn-room em{font-style:normal;background:#d9442f;color:#fff;font-size:10px;padding:2px 6px;border-radius:8px;display:none}
+.btn-room em.on{display:inline}
+.btn-ask{width:96px;background:var(--yellow);color:var(--navy);font:700 25px/1 var(--title);letter-spacing:.06em;text-align:center;padding-top:3px}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(27,27,27,.12);opacity:0;pointer-events:none;transition:opacity .3s;z-index:55}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;height:88dvh;background:var(--paper);z-index:60;border-top:1px solid var(--ink);transform:translateY(102%);transition:transform .4s cubic-bezier(.3,.9,.3,1);display:flex;flex-direction:column}
+.sheet.open{transform:none}
+.sheet.short{height:auto;max-height:88dvh}
+.grab{flex:none;height:22px;display:flex;justify-content:center;align-items:center;touch-action:none;cursor:grab}
+.grab i{width:34px;height:3px;background:var(--line);border-radius:2px}
+.shead{flex:none;display:flex;align-items:flex-start;padding:2px 18px 14px;gap:12px}
+.shead .t{flex:1;min-width:0}
+.shead h2{font:700 44px/.95 var(--title);letter-spacing:.02em;margin-top:6px}
+.shead .sub{color:var(--mute);margin-top:4px;font-size:12px}
+.x{font:500 10.5px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute);padding:6px 0 6px 10px}
+.sbody{flex:1;overflow-y:auto;padding:0 18px calc(28px + var(--sab))}
+.sbody p{margin-bottom:12px}
+.rule{height:1px;background:var(--line);margin:18px 0}
+.labelimg{margin:0 0 18px;background:#fff;padding:22px}
+.labelimg img{width:72%;margin:0 auto}
+.rows div{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line)}
+.rows dt{font:500 10.5px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute);padding-top:2px}
+.rows dd{text-align:right}
+.tbc{color:#c0392b}
+.char{font:700 30px/1.1 var(--title);letter-spacing:.03em;margin:4px 0 16px}
+.quote{font:700 26px/1.15 var(--title);letter-spacing:.02em;margin:6px 0 16px}
+.quote+.k{margin-top:-8px}
+.recipe{display:grid;grid-template-columns:repeat(4,1fr);margin:8px 0 6px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.recipe div{padding:10px 0 9px;font:500 9.5px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--mute);text-align:center}
+.recipe div+div{border-left:1px solid var(--line)}
+.recipe b{display:block;font:700 30px/1.05 var(--title);color:var(--ink);letter-spacing:0}
+.note-ph{font-size:10.5px;color:var(--mute);margin:8px 0 20px}
+.primary{display:block;width:100%;background:var(--navy);color:var(--yellow);font:500 11.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.14em;padding:16px;text-align:center;text-decoration:none}
+.link{display:inline-block;font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.12em;border-bottom:1px solid currentColor;padding:14px 0 3px;margin-top:4px;text-decoration:none}
+.acts{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.acts .primary{margin-bottom:6px}
+
+/* crate */
+.filters{display:flex;gap:16px;margin:0 0 16px;overflow-x:auto;scrollbar-width:none}
+.crate{display:grid;grid-template-columns:1fr 1fr;gap:22px 14px}
+.card .im{aspect-ratio:1;background:#fff center/cover;margin-bottom:8px;box-shadow:inset 0 0 0 12px #fff,0 0 0 1px var(--line)}
+.card b{display:block;font:700 22px/1 var(--title);letter-spacing:.02em}
+.card span{font-size:10.5px;color:var(--mute)}
+
+/* events */
+.ev{padding:4px 0 18px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.ev h4{font:700 32px/.95 var(--title);margin:8px 0 8px;letter-spacing:.02em}
+.hours{width:100%;border-collapse:collapse;margin-bottom:14px}
+.hours td{padding:8px 0;border-bottom:1px solid var(--line)}
+.hours td:last-child{text-align:right}
+.hours tr.today td{color:var(--navy);font-weight:500}
+
+/* chat */
+.topics{flex:none;display:flex;gap:16px;overflow-x:auto;padding:0 18px;border-bottom:1px solid var(--line);scrollbar-width:none}
+.topics::-webkit-scrollbar{display:none}
+.topic{flex:none;font:500 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute);padding:4px 0 10px;border-bottom:1px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.topic.on{color:var(--ink);border-color:var(--ink)}
+.chat{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:16px}
+.m{max-width:86%}
+.m .who{font:500 10px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute);margin-bottom:2px}
+.m.h{padding-left:10px;border-left:2px solid var(--yellow)}
+.m.h .who{color:var(--navy)}
+.m.me{align-self:flex-end;text-align:right}
+.m.me .who{color:#3e4fd6}
+.sys{font-size:10.5px;color:var(--mute);border-bottom:1px solid var(--line);padding-bottom:12px}
+.typing{font-size:11px;color:var(--mute)}
+.compose{flex:none;display:flex;gap:12px;padding:10px 18px calc(12px + var(--sab));border-top:1px solid var(--line);align-items:center}
+.compose input{flex:1;min-width:0;border:0;background:transparent;font:400 14px var(--mono);outline:0;padding:10px 0}
+.compose button{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--navy)}
+.locked{padding:40px 0;text-align:center}
+.locked .quote{margin-bottom:8px}
+
+/* ask hoa */
+.hoa-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.hoa-head img{width:54px;height:54px;object-fit:cover;object-position:50% 12%;border-radius:50%;background:#fff;border:1px solid var(--line)}
+.prog{display:flex;gap:4px;margin-bottom:18px}
+.prog i{flex:1;height:2px;background:var(--line)}.prog i.on{background:var(--navy)}
+.say{font:700 36px/1.02 var(--title);letter-spacing:.02em;margin-bottom:18px}
+.opts button{display:flex;justify-content:space-between;align-items:center;width:100%;padding:15px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.opts button:first-child{border-top:1px solid var(--line)}
+.opts button::after{content:"→";color:var(--mute)}
+.opts button:active{background:#f1eee5}
+.pick{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);width:100%}
+.pick .im{width:64px;height:64px;flex:none;background:#fff center/cover;box-shadow:inset 0 0 0 6px #fff,0 0 0 1px var(--line)}
+.pick b{font:700 24px/1 var(--title);display:block;letter-spacing:.02em}
+.pick span{font-size:11px;color:var(--mute)}
+
+/* toast, demo */
+.toast{position:fixed;left:14px;right:14px;top:calc(var(--top) + var(--sat) + 6px);z-index:90;background:var(--ink);color:var(--paper);font-size:11.5px;padding:10px 14px;opacity:0;transform:translateY(-6px);transition:.25s;pointer-events:none;text-align:center}
+.toast.on{opacity:1;transform:none}
+.demo{position:fixed;right:10px;top:calc(var(--top) + var(--sat) + 4px);z-index:45;background:var(--paper);border:1px solid var(--ink);padding:10px 14px;display:none;flex-direction:column;width:240px}
+.demo.on{display:flex}
+.demo button{padding:9px 0;border-bottom:1px solid var(--line);font-size:12px}
+.demo button:last-child{border:0}
+
+@media (min-width:900px){
+  :root{--dock:0px}
+  .stage{bottom:0;overflow:hidden}
+  .room{height:calc(100% - 10px)}
+  .dock{left:24px;right:auto;bottom:24px;width:360px;height:auto;border:1px solid var(--line);padding:0 14px 14px;gap:12px}
+  .sheet{left:auto;right:0;top:calc(var(--top) + var(--sat));bottom:0;width:420px;height:auto;max-height:none;border-top:0;border-left:1px solid var(--ink);transform:translateX(102%)}
+  .sheet.open{transform:none}
+  .grab{display:none}
+  .shead{padding-top:20px}
+  .scrim{background:transparent}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="logo"><i>A</i>ANTIBARIST<i>A</i></div>
+  <div class="status"><span class="d"></span><div id="statusTxt"></div></div>
+  <div class="sp"></div>
+  <button class="here" id="hereBtn" aria-label="people here now"><svg viewBox="0 0 140 60"><path d="M8 36 L12 16 L18 27 L23 14 L27 28 L100 28 M100 28 L137 12 L134 18 L100 33 M8 36 L18 38 L14 52 L22 44 L24 54 L30 38 L84 34 L80 50 L88 42 L90 52 L100 33" fill="none" stroke="#8b877d" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="hereN">0</span></button>
+  <button class="tune" id="demoBtn" aria-label="demo controls"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#8b877d" stroke-width="1.5" stroke-linecap="round"><path d="M3 6h14M3 14h14"/><circle cx="7" cy="6" r="2" fill="#fbf9f3"/><circle cx="13" cy="14" r="2" fill="#fbf9f3"/></svg></button>
+</header>
+
+<div class="demo" id="demo">
+  <span class="k" style="margin-bottom:4px">demo controls</span>
+  <button data-d="in">someone opens the site</button>
+  <button data-d="out">someone leaves</button>
+  <button data-d="msg">fake Telegram message</button>
+  <button data-d="open">switch open / closed</button>
+</div>
+
+<main class="stage" id="stage">
+  <div class="room" id="room">
+    <img class="bg" src="img/room.jpg" alt="Pencil drawing of the Antibarist shop with framed coffees on the wall">
+    <div class="night"></div>
+  </div>
+</main>
+
+<nav class="dock">
+  <div class="regions" id="regions"></div>
+  <div class="dock-row">
+    <button class="btn-room" id="roomBtn"><b>the back room</b><span><i></i><em id="unread"></em>live chat</span></button>
+    <button class="btn-ask" id="askBtn">ask hoa</button>
+  </div>
+</nav>
+
+<div class="scrim" id="scrim"></div>
+<aside class="sheet" id="sheet" aria-hidden="true">
+  <div class="grab" id="grab"><i></i></div>
+  <div class="shead"><div class="t" id="shead"></div><button class="x" id="sclose">close</button></div>
+  <div id="sslot" style="flex:1;min-height:0;display:flex;flex-direction:column"></div>
+</aside>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const room=$('room'),stage=$('stage'),sheet=$('sheet'),sslot=$('sslot');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+/* ================= DATA ================= */
+// labels Hoa sent. origin:null = still to confirm. tags are for "ask hoa" (from the label words, or from the variety when the label has none)
+const COFFEES={
+  granja:{farm:'Granja Paraíso 92',producer:'Wilton Benitez',variety:'Orange Bourbon',process:'Fermentation washed',character:['silky','velvety','sirupy'],roaster:'liquid dream.',origin:'Colombia',region:'colombia'},
+  nogales:{farm:'Los Nogales',producer:'Oscar Hernández',variety:'Bourbon Pimienta',process:'Anaerobic washed',character:['sparkling','juicy','complex'],roaster:'liquid dream.',origin:'Colombia',region:'colombia'},
+  latorre:{farm:'La Torre',producer:'Marleny Imbachi',variety:'Gesha',process:'Washed',character:['juicy','delicate','floral'],roaster:'liquid dream.',origin:null,region:'colombia'},
+  girasol:{farm:'El Girasol',producer:'Nicolas Medina',variety:'Pink Bourbon',process:'Washed',character:[],roaster:'SEY',origin:'Colombia',region:'colombia'},
+  casita:{farm:'La Casita · Curtain Call',producer:'David Berrio',variety:'Chiroso',process:'Washed',character:[],roaster:'SEY',origin:'Colombia',region:'colombia'},
+  diamante:{farm:'El Diamante · Surprise Encore',producer:'Duber Mejia',variety:'Chiroso',process:'Washed',character:[],roaster:'SEY',origin:'Colombia',region:'colombia'},
+  geshe:{farm:'Geshe',producer:'',variety:'Ethiopian Landrace',process:'White honey',character:[],roaster:'SEY',origin:'Ethiopia',region:'ethiopia'},
+  jaime:{farm:'Las Flores',producer:'Jaime Sánchez',variety:'Gesha',process:'Washed',character:['crisp','floral','vibrant'],roaster:'liquid dream.',origin:null,region:'more'},
+  fernando:{farm:'Las Flores',producer:'Fernando Melgar',variety:'Gesha',process:'Natural',character:['velvety','smooth','floral'],roaster:'liquid dream.',origin:null,region:'more'},
+  mazateca:{farm:'Mazateca',producer:'Renato Martínez',variety:'Typica',process:'Washed',character:['juicy','winey','velvety'],roaster:'liquid dream.',origin:null,region:'more'},
+  romerillo:{farm:'El Romerillo',producer:'Clever Acosta',variety:'Sidra',process:'Washed',character:['crisp','elegant','floral'],roaster:'liquid dream.',origin:null,region:'more'},
+  panama:{farm:'Digna Nuñez x Lost Origin',producer:'Digna Nuñez',variety:'Gesha',process:'Washed',character:[],roaster:'SEY',origin:'Panama',region:'more'}
+};
+const REGIONS=[['all','all'],['colombia','colombia'],['ethiopia','ethiopia'],['kenya','kenya'],['more','more origins']];
+const SLOTS=[
+  {c:'granja',l:24.6,t:23.8,w:9.2,h:11.6},
+  {c:'girasol',l:9.6,t:29.8,w:6.8,h:6.6},
+  {c:'latorre',l:10.6,t:21.7,w:10.4,h:7.3,wide:1},
+  {c:'diamante',l:11.4,t:38.2,w:4,h:4.6},
+  {c:'casita',l:19.8,t:38.6,w:4.8,h:6.6},
+  {c:'nogales',l:13.4,t:49.8,w:19.4,h:8.9,wide:1},
+  {e:'colombia',l:19,t:12.6,w:8.2,h:8},
+  {c:'geshe',l:79.8,t:14,w:6.6,h:8.8},
+  {e:'ethiopia',l:71.4,t:20.4,w:4.2,h:4.8},
+  {e:'kenya',l:66.8,t:27,w:4.2,h:3.2},
+  {e:'kenya',l:72.4,t:26,w:4.6,h:2.8},
+  {c:'jaime',l:79.6,t:27,w:10,h:10.6},
+  {c:'romerillo',l:66,t:32,w:5.4,h:6},
+  {c:'fernando',l:77.8,t:39.6,w:5.4,h:3.6,wide:1},
+  {c:'mazateca',l:66.2,t:46,w:4.2,h:4.2},
+  {c:'panama',l:79,t:44.4,w:5.6,h:5.8}
+];
+const LABELS=[{r:'colombia',t:'colombia',l:5,t2:16.5},{r:'ethiopia',t:'ethiopia',l:66,t2:15.6},{r:'kenya',t:'kenya',s:'soon',l:66.4,t2:23.9},{r:'more',t:'more origins',l:70,t2:51.6}];
+const NAMES=['mila','jonas','ece','luca','noor','sami','kai','yuki','ben','tabea'];
+const FROM=['Neukölln','Kreuzberg','Wedding','Hamburg','Milano','Lisbon','Friedrichshain','Moabit'];
+
+/* ================= HELPERS ================= */
+function toast(t,ms=2600){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),ms)}
+const isDesk=()=>innerWidth>=900;
+function setUnit(){room.style.setProperty('--u',room.offsetWidth/100+'px')}
+const pos=(el,s)=>Object.assign(el.style,{left:s.l+'%',top:s.t+'%',width:s.w+'%',height:s.h+'%'});
+const mk=(cls,html)=>{const e=document.createElement(cls[0]==='b'?'button':'div');e.className=cls.slice(2);if(html)e.innerHTML=html;return e};
+
+/* ================= WALL ================= */
+SLOTS.forEach(s=>{
+  const el=document.createElement(s.c?'button':'div');
+  el.className='fr'+(s.e?' empty':'')+(s.wide?' wide':'');pos(el,s);
+  el.dataset.r=s.c?COFFEES[s.c].region:s.e;
+  el.innerHTML=`<div class="art" ${s.c?`style="background-image:url(img/${s.c}-art.jpg)"`:''}></div>`;
+  if(s.c){el.setAttribute('aria-label',COFFEES[s.c].farm);el.onclick=e=>{e.stopPropagation();openCoffee(s.c)}}
+  room.appendChild(el);
+});
+LABELS.forEach(l=>{const d=document.createElement('div');d.className='wall-label';d.dataset.r=l.r;d.style.left=l.l+'%';d.style.top=l.t2+'%';d.innerHTML=l.t+(l.s?`<small>${l.s}</small>`:'');room.appendChild(d)});
+
+const door=document.createElement('button');door.className='door';pos(door,{l:40,t:20.5,w:21.5,h:22.5});
+door.innerHTML=`<div class="sign"><b>BACK ROOM</b><span><i></i>live chat</span></div>`;door.onclick=e=>{e.stopPropagation();openChat()};room.appendChild(door);
+
+const hoa=document.createElement('button');hoa.className='hoa';hoa.innerHTML='<img src="img/hoa.png" alt="Hoa behind the counter">';
+hoa.onclick=e=>{e.stopPropagation();openAsk()};room.appendChild(hoa);
+const askme=document.createElement('div');askme.className='askme';askme.textContent='ask me';room.appendChild(askme);
+
+[{l:16,t:59.5,w:62,h:20,fn:()=>openCrate()},{l:77.5,t:54,w:21,h:12,fn:()=>openEvents()},{l:17,t:84,w:60,h:11.5,fn:()=>openAbout()},{l:49.4,t:1.2,w:4.2,h:2.6,fn:()=>toggleOpen()}]
+ .forEach(h=>{const b=document.createElement('button');b.className='hs';pos(b,h);b.onclick=e=>{e.stopPropagation();h.fn()};room.appendChild(b)});
+
+const meow=document.createElement('button');meow.className='meow';meow.innerHTML='<img src="img/meow.png" alt="">';room.appendChild(meow);
+meow.onclick=e=>{e.stopPropagation();showPop(meow,`<div class="t">meow-meow</div><p>lives here. sleeps on the crate. the tip jar is hers.</p><button class="act" id="treat">give a treat</button>`,()=>{$('treat').onclick=()=>{closePop();toast('thank you · in the real version this is a €1 tip for Hoa')}})};
+
+/* ================= REGIONS ================= */
+let region='all';
+function renderRegions(){
+  const n=r=>r==='all'?Object.keys(COFFEES).length:Object.values(COFFEES).filter(c=>c.region===r).length;
+  $('regions').innerHTML=REGIONS.map(([r,t])=>`<button class="rg ${region===r?'on':''}" data-r="${r}">${t}<sup>${n(r)||'·'}</sup></button>`).join('');
+  $('regions').querySelectorAll('.rg').forEach(b=>b.onclick=()=>setRegion(b.dataset.r));
+}
+function setRegion(r){
+  region=(region===r&&r!=='all')?'all':r;
+  room.classList.toggle('filtering',region!=='all');
+  room.querySelectorAll('.fr,.wall-label').forEach(f=>f.classList.toggle('on',f.dataset.r===region));
+  renderRegions();
+  const max=stage.scrollWidth-stage.clientWidth;
+  if(region==='colombia')stage.scrollTo({left:0,behavior:'smooth'});
+  else if(region!=='all')stage.scrollTo({left:max,behavior:'smooth'});
+  if(region==='kenya')toast('no kenya on the wall right now. Hoa posts new coffees in the back room first.');
+}
+
+/* ================= SHEET ================= */
+let sheetName=null;
+function openSheet(head,body,o={}){
+  $('shead').innerHTML=head;sslot.innerHTML=body;
+  sheet.classList.toggle('short',!!o.short);
+  sheet.classList.add('open');sheet.setAttribute('aria-hidden','false');$('scrim').classList.add('on');
+  sheetName=o.name||null;closePop();
+}
+function closeSheet(){sheet.classList.remove('open');sheet.setAttribute('aria-hidden','true');$('scrim').classList.remove('on');sheetName=null}
+$('sclose').onclick=closeSheet;$('scrim').onclick=closeSheet;
+addEventListener('keydown',e=>{if(e.key==='Escape'){closeSheet();closePop()}});
+(()=>{let y0=null,dy=0;const g=$('grab');
+ g.addEventListener('pointerdown',e=>{y0=e.clientY;dy=0;g.setPointerCapture(e.pointerId);sheet.style.transition='none'});
+ g.addEventListener('pointermove',e=>{if(y0===null)return;dy=Math.max(0,e.clientY-y0);sheet.style.transform=`translateY(${dy}px)`});
+ g.addEventListener('pointerup',()=>{sheet.style.transition='';sheet.style.transform='';if(dy>80)closeSheet();y0=null});
+})();
+const head=(k,t,sub)=>`<div class="k">${k}</div><h2>${t}</h2>${sub?`<div class="sub">${sub}</div>`:''}`;
+
+/* ================= COFFEE ================= */
+let bag=0;
+function openCoffee(id){
+  const c=COFFEES[id];
+  const body=`<div class="sbody">
+    <div class="labelimg"><img src="img/${id}-label.jpg" alt="${esc(c.roaster)} label"></div>
+    ${c.character.length?`<div class="char">${c.character.join(' · ')}</div>`:''}
+    <dl class="rows">
+      <div><dt>roaster</dt><dd>${esc(c.roaster)}</dd></div>
+      <div><dt>origin</dt><dd>${c.origin||'<span class="tbc">to confirm</span>'}</dd></div>
+      <div><dt>variety</dt><dd>${esc(c.variety)}</dd></div>
+      <div><dt>process</dt><dd>${esc(c.process)}</dd></div>
+    </dl>
+    <div class="rule"></div>
+    <div class="k" style="margin-bottom:6px">Hoa's note</div>
+    <div class="quote">"${c.variety.includes('Gesha')?'light and flowery. drink it black and let it cool a bit.':/anaerobic|ferment/i.test(c.process)?'a wild one. try it as filter first.':'clean and sweet. a good place to start.'}"</div>
+    <div class="k" style="margin:4px 0 0">how he brews it</div>
+    <div class="recipe"><div><b>15g</b>coffee</div><div><b>250g</b>water</div><div><b>93°</b>temp</div><div><b>2:45</b>time</div></div>
+    <p class="note-ph">note, recipe and price are placeholders for Hoa to fill in</p>
+    <div class="acts"><button class="primary" id="addBag">add to bag</button><button class="link" id="askHoa">ask Hoa about this coffee</button></div>
+  </div>`;
+  openSheet(head((c.origin||'origin to confirm')+' · '+c.roaster,esc(c.farm),c.producer?esc(c.producer):''),body,{name:'coffee'});
+  $('addBag').onclick=()=>{bag++;toast(`added (${bag}) · checkout comes in a later version`)};
+  $('askHoa').onclick=()=>openChat(`hey Hoa, how do you brew the ${c.farm}?`);
+}
+
+/* ================= CRATE ================= */
+function openCrate(f='all'){
+  const ids=Object.keys(COFFEES).filter(id=>f==='all'||COFFEES[id].region===f);
+  const body=`<div class="sbody"><div class="filters">${REGIONS.filter(r=>r[0]!=='kenya').map(([r,t])=>`<button class="rg ${f===r?'on':''}" data-f="${r}">${t}</button>`).join('')}</div>
+    <div class="crate">${ids.map(id=>{const c=COFFEES[id];return `<button class="card" data-id="${id}"><div class="im" style="background-image:url(img/${id}-art.jpg)"></div><b>${esc(c.farm)}</b><span>${esc(c.origin||'origin tbc')} · ${esc(c.roaster)}</span></button>`}).join('')}</div></div>`;
+  openSheet(head('the crate','everything on the wall',`${Object.keys(COFFEES).length} coffees`),body);
+  sslot.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>openCrate(b.dataset.f));
+  sslot.querySelectorAll('.card').forEach(b=>b.onclick=()=>openCoffee(b.dataset.id));
+}
+
+/* ================= EVENTS / ABOUT ================= */
+const HOURS=[['Mon','closed'],['Tue','8 - 16'],['Wed','8 - 16'],['Thu','8 - 16'],['Fri','8 - 16'],['Sat','9 - 17'],['Sun','closed']];
+function openEvents(){
+  const idx=(berlin().day+6)%7;
+  const body=`<div class="sbody">
+   <div class="ev"><div class="k">sat 14 nov · 12 - 18 · the playce at studio 5</div><h4>Antibarist x Luko<br>brew your own cup</h4><p>the biggest coffee selection in Berlin. pick a bean, pick a brewer, make your own cup.</p><button class="link" onclick="toast('saved · in the real version this goes to your calendar')">I'm coming</button></div>
+   <div class="ev"><div class="k">every few weeks</div><h4>cupping club</h4><p>5 to 8 coffees side by side, no experience needed. the next date is posted in the back room.</p></div>
+   <div class="k" style="margin-bottom:4px">opening hours · Frameworks Berlin, Kreuzberg</div>
+   <table class="hours">${HOURS.map((d,i)=>`<tr class="${i===idx?'today':''}"><td>${d[0]}${i===idx?' · today':''}</td><td>${d[1]}</td></tr>`).join('')}</table></div>`;
+  openSheet(head('the counter',"what's on"),body);
+}
+function openAbout(){
+  const body=`<div class="sbody">
+   <div class="quote">"What is good coffee? This question has been following me since my early days."</div>
+   <div class="k">Hoa</div>
+   <div class="rule"></div>
+   <p>Hoa started at a place where nobody cared about the coffee. The service was warm, the coffee was not. So he did his own research, visited the coffee shops people recommended, and made up his own mind.</p>
+   <p>Antibarist is the result: a specialty coffee popup inside Frameworks Berlin, a framing shop in Kreuzberg. A space to share what he finds with others, over coffee.</p>
+   <div class="rule"></div>
+   <p style="color:var(--mute)">the black cat is meow-meow, she lives here. every line cat is a real person on this site right now. the blue one is you.</p>
+   <div class="acts" style="margin-top:14px"><a class="primary" href="https://t.me/antibarist" target="_blank" rel="noopener">join on telegram</a></div></div>`;
+  openSheet(head('about','not your typical barista'),body);
+}
+
+/* ================= ASK HOA ================= */
+const Q=[
+  {q:'how do you make coffee at home?',a:[['espresso machine','esp'],['filter: V60, Chemex, AeroPress','fil'],['moka pot','moka'],["I don't. I come here.",'any']]},
+  {q:'what do you want to taste?',a:[['fruit. berries, citrus, juice','fruit'],['flowers. jasmine, tea','floral'],['sweet. chocolate, caramel','sweet'],['surprise me','any']]},
+  {q:'how wild can it be?',a:[['keep it clean and classic','clean'],['a little funky is fine','funky1'],['the weirder the better','funky2']]},
+  {q:'light like tea, or heavy and syrupy?',a:[['light','light'],['somewhere in between','mid'],['heavy','heavy']]}
+];
+function tags(c){
+  const t=new Set(),w=c.character.join(' ');
+  if(/juicy|vibrant|sparkling|winey|crisp/.test(w))t.add('fruit');
+  if(/floral|delicate|elegant/.test(w))t.add('floral');
+  if(/silky|velvety|smooth|sirupy/.test(w))t.add('sweet');
+  if(/crisp|delicate|elegant|vibrant/.test(w))t.add('light');
+  if(/sirupy|silky|winey|complex/.test(w))t.add('heavy');
+  if(!c.character.length){ // no words on the label: go by variety
+    if(/Gesha|Chiroso|Landrace/.test(c.variety)){t.add('floral');t.add('light')}
+    if(/Pink Bourbon|Chiroso|Landrace/.test(c.variety))t.add('fruit');
+  }
+  const p=c.process.toLowerCase();
+  t.add(/anaerobic|ferment/.test(p)?'funky2':/natural|honey/.test(p)?'funky1':'clean');
+  return t;
+}
+let answers=[];
+function openAsk(step=-1){
+  const face=`<div class="hoa-head"><img src="img/hoa.png" alt=""><div><div style="font:700 24px/1 var(--title)">Hoa</div><div class="k">behind the counter</div></div></div>`;
+  if(step===-1){
+    answers=[];
+    openSheet(head('ask hoa','what is good coffee?'),`<div class="sbody">${face}<p>No milk questions. Just four questions about what you like, then I tell you which coffee on the wall to try.</p><div class="acts" style="margin-top:18px"><button class="primary" id="go">start</button></div></div>`,{short:1});
+    $('go').onclick=()=>openAsk(0);return;
+  }
+  if(step===Q.length)return askResult();
+  const q=Q[step];
+  openSheet(head('ask hoa',`question ${step+1} of ${Q.length}`),`<div class="sbody">${face}<div class="prog">${Q.map((_,i)=>`<i class="${i<=step?'on':''}"></i>`).join('')}</div><div class="say">${q.q}</div><div class="opts">${q.a.map(a=>`<button data-v="${a[1]}">${a[0]}</button>`).join('')}</div></div>`,{short:1});
+  sslot.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{answers[step]=b.dataset.v;openAsk(step+1)});
+}
+function askResult(){
+  const [brew,taste,wild,body]=answers;
+  const scored=Object.entries(COFFEES).map(([id,c])=>{
+    const t=tags(c);let s=Math.random()*.3;
+    if(taste!=='any'&&t.has(taste))s+=3;
+    if(t.has(wild))s+=2; else if(wild==='funky2'&&t.has('funky1'))s+=1;
+    if(body==='light'&&t.has('light'))s+=1.5;
+    if(body==='heavy'&&t.has('heavy'))s+=1.5;
+    if(body==='mid'&&!t.has('light')&&!t.has('heavy'))s+=1;
+    if((brew==='esp'||brew==='moka')&&(t.has('sweet')||t.has('heavy')))s+=1;
+    if(brew==='fil'&&(t.has('floral')||t.has('light')))s+=1;
+    return {id,c,s};
+  }).sort((a,b)=>b.s-a.s);
+  const top=scored[0],more=scored.slice(1,3);
+  const why={fruit:'It tastes like fruit',floral:'It is light and flowery',sweet:'It is sweet and round',any:'It is one of my favourites right now'}[taste];
+  const how={esp:'pull it as espresso',fil:'brew it as filter',moka:'it works on a moka pot',any:'come by and I make it for you'}[brew];
+  const body2=`<div class="sbody">
+    <div class="labelimg"><img src="img/${top.id}-label.jpg" alt=""></div>
+    <div class="quote">"Try ${esc(top.c.farm)}. ${why}, and ${how}."</div><div class="k">Hoa</div>
+    <div class="acts" style="margin:18px 0 22px"><button class="primary" id="seeTop">see this coffee</button><button class="link" id="talk">talk to Hoa about it</button></div>
+    <div class="k" style="margin-bottom:4px">also try</div>
+    ${more.map(m=>`<button class="pick" data-id="${m.id}"><div class="im" style="background-image:url(img/${m.id}-art.jpg)"></div><div><b>${esc(m.c.farm)}</b><span>${esc(m.c.variety)} · ${esc(m.c.process)}</span></div></button>`).join('')}
+    <button class="link" id="again" style="margin-top:14px">ask again</button></div>`;
+  openSheet(head('ask hoa','your coffee'),body2);
+  $('seeTop').onclick=()=>openCoffee(top.id);$('again').onclick=()=>openAsk(0);
+  $('talk').onclick=()=>openChat(`hey Hoa, you told me to try the ${top.c.farm}. `);
+  sslot.querySelectorAll('.pick').forEach(b=>b.onclick=()=>openCoffee(b.dataset.id));
+}
+
+/* ================= CHAT ================= */
+const TOPICS=[['Café Window',1],['Cupping Club'],['Brewing Recipes'],['Coffee Review'],['Beanexchange'],['Coffee Memes']];
+let myName=null;
+let log=[
+  {sys:'this is the Café Window topic of the Antibarist Telegram group. messages go both ways.'},
+  {who:'mila',t:'is the Granja Paraíso still there? it tasted like orange juice',at:'09:41'},
+  {who:'Hoa',t:'yes, 3 bags left. come before saturday',at:'09:44',hoa:1},
+  {who:'jonas',t:'who is going to brew your own cup on the 14th?',at:'10:12'},
+  {who:'ece',t:'me. bringing my own grinder',at:'10:15'}
+];
+let unread=0;
+const hm=()=>{const b=berlin();return String(b.h).padStart(2,'0')+':'+String(b.m).padStart(2,'0')};
+const msgHTML=m=>m.sys?`<div class="sys">${esc(m.sys)}</div>`:`<div class="m ${m.hoa?'h':''} ${m.me?'me':''}"><div class="who">${esc(m.who)} · ${m.at}${m.me?' · sent':''}</div>${esc(m.t)}</div>`;
+function openChat(prefill=''){
+  unread=0;badge();
+  const n=cats.filter(c=>!c.you).length;
+  const body=`<div class="topics">${TOPICS.map((t,i)=>`<button class="topic ${i===0?'on':''}" data-i="${i}">${t[0]}</button>`).join('')}</div>
+   <div class="chat" id="chat">${log.map(msgHTML).join('')}</div>
+   <form class="compose" id="compose"><input id="cin" placeholder="write to Hoa and the group" autocomplete="off" enterkeyhint="send"><button>send</button></form>`;
+  openSheet(head('live · linked to telegram','the back room',`Hoa + ${n} people here now`),body,{name:'chat'});
+  $('chat').scrollTop=1e6;
+  const cin=$('cin');cin.value=prefill;if(isDesk())setTimeout(()=>cin.focus(),400);
+  $('compose').onsubmit=e=>{e.preventDefault();const v=cin.value.trim();if(!v)return;cin.value='';
+    push({who:myName||'you',t:v,at:hm(),me:1});youCat&&youCat.say(v.length>18?v.slice(0,16)+'…':v);reply(v)};
+  sslot.querySelectorAll('.topic').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i;if(i===0)return openChat();
+    sslot.querySelectorAll('.topic').forEach(x=>x.classList.toggle('on',x===b));
+    $('chat').innerHTML=`<div class="locked"><div class="quote">${TOPICS[i][0]}</div><p style="color:var(--mute)">members only. this topic stays inside Telegram.</p><a class="primary" href="https://t.me/antibarist" target="_blank" rel="noopener" style="margin-top:18px">join 120 people on telegram</a></div>`;
+    $('compose').style.display='none';
+  });
+}
+function push(m){
+  log.push(m);
+  if(sheetName==='chat'&&$('chat')){$('chat').insertAdjacentHTML('beforeend',msgHTML(m));$('chat').scrollTop=1e6}
+  else if(!m.me){unread++;badge()}
+}
+function badge(){const u=$('unread');u.textContent=unread;u.classList.toggle('on',unread>0)}
+function typing(name,ms,cb){
+  setTimeout(()=>{if($('chat')){$('chat').insertAdjacentHTML('beforeend',`<div class="typing" id="typ">${name} is typing</div>`);$('chat').scrollTop=1e6}},600);
+  setTimeout(()=>{$('typ')&&$('typ').remove();cb()},ms);
+}
+function reply(q){
+  const s=q.toLowerCase(),at=(s.match(/@(\w+)/)||[])[1],mate=at&&cats.find(c=>c.name===at);
+  if(mate){typing(mate.name,2600,()=>{push({who:mate.name,t:pick(['hey, nice to meet you here','hi! are you at Frameworks right now?','hello. have you tried the Granja Paraíso?']),at:hm()});mate.say('hi')});return}
+  let a;
+  if(/oat|milk|cow/.test(s))a='both work. but for the fruity ones, try it without milk first';
+  else if(/open|hour|when|today|close/.test(s))a=berlin().open?'open right now, come by':'closed right now. tue to fri 8-16, sat 9-17';
+  else if(/fruit|recommend|which|best|suggest|try/.test(s))a='fruity: Los Nogales. flowery: Las Flores. sweet: Granja Paraíso';
+  else if(/brew|recipe|grind|v60|how/.test(s))a='15g coffee, 250g water, 93 degrees, around 2:45. then taste and adjust';
+  else if(/cat|meow/.test(s))a='meow-meow is the real boss here';
+  else if(/^(hi|hey|hello|hallo|moin|ciao)/.test(s))a='hey, welcome to the back room';
+  else a='good question, give me a minute. or ask me at the counter';
+  typing('Hoa',2600,()=>push({who:'Hoa',t:a,at:hm(),hoa:1}));
+}
+const RANDOM=[['mila','just got the SEY El Girasol, smells crazy'],['luca','cupping club next week?'],['Hoa','new on the wall: SEY Geshe from Ethiopia',1],['jonas','meow-meow is sleeping on my jacket again'],['Hoa','batch brew is ready',1]];
+function randomMsg(){const r=pick(RANDOM);push({who:r[0],t:r[1],at:hm(),hoa:r[2]});if(sheetName!=='chat')toast('new message in the back room',1800)}
+setInterval(()=>{if(Math.random()<.4)randomMsg()},32000);
+$('roomBtn').onclick=()=>openChat();$('askBtn').onclick=()=>openAsk();
+
+/* ================= OPEN / CLOSED ================= */
+function berlin(){
+  const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Berlin',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()).map(x=>[x.type,x.value]));
+  const day=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(p.weekday),h=+p.hour%24,m=+p.minute,t=h+m/60;
+  let open=false,close=0;
+  if(day>=2&&day<=5&&t>=8&&t<16){open=true;close=16}
+  if(day===6&&t>=9&&t<17){open=true;close=17}
+  return {day,h,m,open,close};
+}
+let forced=null;
+const nextOpen=d=>(d===6||d===0||d===1)?'tue 8:00':(berlin().h<8?'today 8:00':'tomorrow 8:00');
+function applyOpen(){
+  const b=berlin(),open=forced===null?b.open:forced;
+  document.body.classList.toggle('closed',!open);
+  $('statusTxt').innerHTML=open?`<b>open</b>${forced===null?'till '+b.close+':00':'Hoa is in'}`:`<b>closed</b>back ${nextOpen(b.day)}`;
+}
+function toggleOpen(){forced=document.body.classList.contains('closed');applyOpen();toast(forced?'lights on · Hoa is in':'lights off · closed')}
+
+/* ================= CATS ================= */
+const CAT=`<svg viewBox="0 0 140 60"><g class="flip">
+ <path d="M8 36 L12 16 L18 27 L23 14 L27 28 L100 28"/>
+ <g class="tail"><path d="M100 28 L137 10 L134 17 L100 33"/></g>
+ <g class="la"><path d="M8 36 L18 38 L14 52 L22 44 L24 54 L30 38 L84 34 L80 50 L88 42 L90 52 L100 33"/></g>
+ <g class="lb"><path d="M8 36 L18 38 L22 52 L25 44 L31 54 L33 38 L86 34 L93 50 L95 42 L99 52 L100 33"/></g>
+ <g class="ls"><path d="M8 36 L18 38 L19 44 L32 44 L34 38 L84 34 L85 42 L98 42 L100 33"/></g>
+</g></svg>`;
+const ZONES=[{x0:6,x1:93,y0:85,y1:97,s0:.9,s1:1.12,w:.8},{x0:34,x1:40,y0:58.6,y1:58.6,s0:.72,s1:.72,w:.1},{x0:61,x1:74,y0:58.6,y1:58.6,s0:.72,s1:.72,w:.1}];
+let cats=[],youCat=null,popFor=null;
+class Cat{
+  constructor(o={}){
+    this.you=!!o.you;const used=cats.map(c=>c.name);
+    this.name=this.you?'you':(pick(NAMES.filter(n=>!used.includes(n)))||'guest');this.from=pick(FROM);
+    const r=Math.random();this.zone=o.zone??(r<.8?0:r<.9?1:2);
+    const z=ZONES[this.zone];this.x=o.x??(z.x0+Math.random()*(z.x1-z.x0));this.y=z.y0+Math.random()*(z.y1-z.y0);
+    this.el=document.createElement('button');this.el.className='cat sit'+(this.you?' you':'');
+    this.el.innerHTML=CAT+`<span class="nm">${this.name}</span>`;
+    this.el.onclick=e=>{e.stopPropagation();this.you?youPop():matePop(this)};
+    room.appendChild(this.el);
+    this.wait=1500+Math.random()*4000;this.target=null;this.speed=2+Math.random()*2;
+    if(o.enter){this.x=-8;this.go(5+Math.random()*30,this.y)}
+    this.place();
+  }
+  place(){
+    const z=ZONES[this.zone],k=z.y1===z.y0?0:(this.y-z.y0)/(z.y1-z.y0),s=z.s0+(z.s1-z.s0)*k,w=15*s;
+    Object.assign(this.el.style,{width:w+'%',fontSize:s+'em',left:(this.x-w/2)+'%',top:(this.y-w*.43*928/1232)+'%',zIndex:Math.round(this.y)+(this.zone?0:20)});
+  }
+  go(x,y){this.target={x,y};this.el.classList.remove('sit');this.el.classList.add('walk');this.el.classList.toggle('right',x>this.x)}
+  say(t,ms=1800){const b=this.el.querySelector('.nm');b.textContent=t;clearTimeout(this.st);this.st=setTimeout(()=>b.textContent=this.you?(myName||'you'):this.name,ms)}
+  tick(dt){
+    if(this===popFor)return;
+    if(!this.target){
+      if(this.leaving){this.el.remove();cats=cats.filter(c=>c!==this);here();return}
+      this.wait-=dt;if(this.wait<=0){const z=ZONES[this.zone];this.go(z.x0+Math.random()*(z.x1-z.x0),z.y0+Math.random()*(z.y1-z.y0))}return;
+    }
+    const dx=this.target.x-this.x,dy=this.target.y-this.y,d=Math.hypot(dx,dy),st=this.speed*dt/1000;
+    if(d<=st){this.x=this.target.x;this.y=this.target.y;this.target=null;this.el.classList.remove('walk');this.el.classList.add('sit');this.wait=(document.body.classList.contains('closed')?9000:4000)+Math.random()*7000}
+    else{this.x+=dx/d*st;this.y+=dy/d*st}
+    this.place();
+  }
+  leave(){this.leaving=true;this.zone=0;this.go(this.x<50?-10:110,this.y)}
+}
+const here=()=>$('hereN').textContent=cats.length;
+function addCat(o){const c=new Cat(o);cats.push(c);here();return c}
+
+let popEl=null;
+function showPop(anchor,html,after){
+  closePop();popEl=document.createElement('div');popEl.className='pop';popEl.innerHTML=html;popEl.onclick=e=>e.stopPropagation();room.appendChild(popEl);
+  const r=anchor.getBoundingClientRect(),rr=room.getBoundingClientRect();
+  popEl.style.left=Math.max(14,Math.min(86,(r.left+r.width/2-rr.left)/rr.width*100))+'%';
+  popEl.style.top=((r.top-rr.top)/rr.height*100-1)+'%';after&&after();
+}
+function closePop(){popEl&&popEl.remove();popEl=null;popFor=null}
+room.addEventListener('click',closePop);
+function matePop(c){
+  showPop(c.el,`<div class="t">${c.name}</div><p>from ${c.from} · ${pick(['looking at the wall','in the back room','flipping through the crate','just walked in'])}</p><button class="act" id="hi">say hi</button>`,()=>{$('hi').onclick=()=>{closePop();openChat('@'+c.name+' ')}});
+  popFor=c;c.el.classList.remove('walk');c.el.classList.add('sit');
+}
+function youPop(){
+  showPop(youCat.el,`<div class="t">this is you</div><p>pick a name so people in the back room know who you are.</p><input id="nm" maxlength="14" placeholder="your name" value="${myName?esc(myName):''}"><button class="act" id="saveNm">save</button>`,()=>{
+    $('saveNm').onclick=()=>{const v=$('nm').value.trim().toLowerCase().replace(/[^\p{L}\p{N}_]/gu,'').slice(0,14);if(v){myName=v;youCat.el.querySelector('.nm').textContent=v}closePop()};
+  });
+  popFor=youCat;
+}
+
+/* ================= BOOT ================= */
+let last=performance.now();
+function loop(t){const dt=Math.min(60,t-last);last=t;cats.forEach(c=>c.tick(dt));requestAnimationFrame(loop)}
+$('demoBtn').onclick=e=>{e.stopPropagation();$('demo').classList.toggle('on')};
+document.addEventListener('click',e=>{if(!$('demo').contains(e.target))$('demo').classList.remove('on')});
+$('demo').querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{
+  const d=b.dataset.d;
+  if(d==='in'){const c=addCat({enter:true,zone:0});toast(c.name+' opened the site')}
+  if(d==='out'){const c=cats.find(c=>!c.you&&!c.leaving);if(c){c.leave();toast(c.name+' left')}}
+  if(d==='msg')randomMsg();
+  if(d==='open')toggleOpen();
+  $('demo').classList.remove('on');
+});
+$('hereBtn').onclick=()=>{toast(`${cats.length} people on the site right now. tap a cat to say hi.`);youCat.say('this is you',2200)};
+addEventListener('resize',setUnit);
+
+const img=room.querySelector('img.bg');
+function boot(){
+  setUnit();renderRegions();
+  if(!isDesk())stage.scrollLeft=(stage.scrollWidth-stage.clientWidth)/2;
+  youCat=addCat({you:true,zone:0,x:50});
+  const n=2+Math.floor(Math.random()*2);for(let i=0;i<n;i++)addCat();
+  applyOpen();setInterval(applyOpen,60000);requestAnimationFrame(loop);
+  setTimeout(()=>{unread=2;badge()},5000);
+  setInterval(()=>{const r=Math.random();if(r<.25&&cats.length<6)addCat({enter:true,zone:0});else if(r>.85&&cats.length>3){const c=cats.find(c=>!c.you&&!c.leaving&&c!==popFor);c&&c.leave()}},18000);
+}
+img.complete?boot():img.addEventListener('load',boot);
+</script>
+</body>
+</html>

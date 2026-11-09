@@ -1,0 +1,52 @@
+/* Frameworks frames: real Frameworks Berlin mouldings around any picture.
+   Each side is its own strip cut from a material photo (strips/), so the grain runs along it,
+   mitred at the corners. Light from the top right: shadow falls down-left, the lip shades the mount top + right.
+   Everything is prefixed fwf- so it never clashes with the site's own css. */
+
+.fwf{ position:relative; display:inline-block; vertical-align:top; max-width:100%; box-sizing:border-box;
+  padding:var(--k, 14px); background:var(--c, #222); line-height:0;
+  box-shadow:-10px 14px 24px rgba(0,0,0,.2), -2px 3px 5px rgba(0,0,0,.14); }
+.fwf *{ box-sizing:border-box; }
+.fwf > .fwf-s{ position:absolute; background-color:var(--c, #222); background-repeat:repeat; pointer-events:none; }
+.fwf > .fwf-t{ top:0; left:0; right:0; height:var(--k); background-image:var(--tx-t); background-size:auto 100%; clip-path:polygon(0 0, 100% 0, calc(100% - var(--k)) 100%, var(--k) 100%); filter:brightness(1.06); }
+.fwf > .fwf-b{ bottom:0; left:0; right:0; height:var(--k); background-image:var(--tx-b); background-size:auto 100%; clip-path:polygon(var(--k) 0, calc(100% - var(--k)) 0, 100% 100%, 0 100%); filter:brightness(.82); }
+.fwf > .fwf-l{ top:0; bottom:0; left:0; width:var(--k); background-image:var(--tx-l); background-size:100% auto; clip-path:polygon(0 0, 100% var(--k), 100% calc(100% - var(--k)), 0 100%); filter:brightness(.9); }
+.fwf > .fwf-r{ top:0; bottom:0; right:0; width:var(--k); background-image:var(--tx-r); background-size:100% auto; clip-path:polygon(0 var(--k), 100% 0, 100% 100%, 0 calc(100% - var(--k))); filter:brightness(1.12); }
+
+/* the mount (passe-partout) and a soft glass glare */
+.fwf-mount{ position:relative; display:block; padding:var(--mw, 0); background:var(--mc, #fbfaf7); box-shadow:inset -3px 4px 6px rgba(0,0,0,.18); }
+.fwf-mount::after{ content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(125deg, rgba(255,255,255,0) 40%, rgba(255,255,255,var(--glare, .1)) 52%, rgba(255,255,255,0) 64%); }
+.fwf-mount > img{ display:block; width:100%; height:auto; max-width:none; margin:0; border:0;
+  box-shadow:0 0 0 1px rgba(0,0,0,.06); } /* the picture keeps its own ratio, never cropped */
+.fwf[data-mount="none"] .fwf-mount > img{ box-shadow:none; }
+
+/* mounts */
+.fwf[data-mount="white"]{ --mc:#fbfaf7; }
+.fwf[data-mount="cream"]{ --mc:#f1eadb; }
+.fwf[data-mount="black"]{ --mc:#1d1d1d; }
+.fwf[data-mount="none"] { --mc:transparent; }
+
+/* the woods + steel: real strips */
+.fwf[data-frame="oak"]    { --c:#c79a6a; --tx-t:url(strips/oak-t.jpg);     --tx-b:url(strips/oak-b.jpg);     --tx-l:url(strips/oak-l.jpg);     --tx-r:url(strips/oak-r.jpg); }
+.fwf[data-frame="walnut"] { --c:#4a3326; --tx-t:url(strips/walnut-t.jpg);  --tx-b:url(strips/walnut-b.jpg);  --tx-l:url(strips/walnut-l.jpg);  --tx-r:url(strips/walnut-r.jpg); }
+.fwf[data-frame="steel"]  { --c:#3a3b3c; --tx-t:url(strips/steel-t.jpg);   --tx-b:url(strips/steel-b.jpg);   --tx-l:url(strips/steel-l.jpg);   --tx-r:url(strips/steel-r.jpg); }
+.fwf[data-frame="chipped"]{ --c:#e9e4df; --tx-t:url(strips/chipped-t.jpg); --tx-b:url(strips/chipped-b.jpg); --tx-l:url(strips/chipped-l.jpg); --tx-r:url(strips/chipped-r.jpg); }
+/* ash + grey wash: the oak photo, lightened or washed */
+.fwf[data-frame="ash"], .fwf[data-frame="grey"]{ --tx-t:url(strips/oak-t.jpg); --tx-b:url(strips/oak-b.jpg); --tx-l:url(strips/oak-l.jpg); --tx-r:url(strips/oak-r.jpg); }
+.fwf[data-frame="ash"] { --c:#e2d2b4; } .fwf[data-frame="ash"]  > .fwf-s{ filter:brightness(1.32) saturate(.55); }
+.fwf[data-frame="grey"]{ --c:#a9a6a0; } .fwf[data-frame="grey"] > .fwf-s{ filter:grayscale(.85) brightness(1.05); }
+
+/* painted + leaf + shadow box: drawn */
+.fwf[data-frame="black"]{ --c:#1c1c1c; }
+.fwf[data-frame="white"]{ --c:#f4f2ee; }
+.fwf[data-frame="black"] > .fwf-t, .fwf[data-frame="black"] > .fwf-b,
+.fwf[data-frame="white"] > .fwf-t, .fwf[data-frame="white"] > .fwf-b{ background-image:linear-gradient(180deg, rgba(255,255,255,.08), rgba(0,0,0,.06)); }
+.fwf[data-frame="gold"]{ --c:#b8913f; }
+.fwf[data-frame="gold"] > .fwf-t, .fwf[data-frame="gold"] > .fwf-b{ background-image:linear-gradient(180deg, #8a6a2a, #e8c873 35%, #b38a3a 60%, #f2d98f 80%, #8a6a2a); }
+.fwf[data-frame="gold"] > .fwf-l, .fwf[data-frame="gold"] > .fwf-r{ background-image:linear-gradient(90deg, #8a6a2a, #e8c873 35%, #b38a3a 60%, #f2d98f 80%, #8a6a2a); }
+.fwf[data-frame="silver"]{ --c:#b9bcbf; }
+.fwf[data-frame="silver"] > .fwf-t, .fwf[data-frame="silver"] > .fwf-b{ background-image:linear-gradient(180deg, #7d8185, #e6e8ea 35%, #a3a7ab 60%, #f4f5f6 80%, #7d8185); }
+.fwf[data-frame="silver"] > .fwf-l, .fwf[data-frame="silver"] > .fwf-r{ background-image:linear-gradient(90deg, #7d8185, #e6e8ea 35%, #a3a7ab 60%, #f4f5f6 80%, #7d8185); }
+.fwf[data-frame="box"]{ --c:#2a2829; }
+.fwf[data-frame="box"] .fwf-mount{ box-shadow:inset -8px 10px 16px rgba(0,0,0,.45); }

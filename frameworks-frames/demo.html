@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frameworks frames</title>
+<link rel="stylesheet" href="frames.css">
+<style>
+  body{ margin:0; padding:48px 16px; background:#f8f8f8; font:16px/1.4 system-ui, sans-serif; color:#121412; }
+  h1{ font-weight:400; margin:0 0 32px; }
+  .wall{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:48px 32px; align-items:end; max-width:1200px; }
+  .wall figure{ margin:0; }
+  .wall figcaption{ margin-top:14px; font-size:13px; color:#555; }
+</style>
+</head>
+<body>
+<h1>Every picture in a real Frameworks frame</h1>
+<div class="wall">
+  <figure><img src="demo/sample-crow.jpg" data-frame="oak" alt=""><figcaption>oak · white mount</figcaption></figure>
+  <figure><img src="demo/sample-balloons.jpg" data-frame="walnut" data-mount="cream" alt=""><figcaption>walnut · cream mount</figcaption></figure>
+  <figure><img src="demo/sample-crow.jpg" data-frame="chipped" data-mount="none" alt=""><figcaption>chipped upcycled · no mount</figcaption></figure>
+  <figure><img src="demo/sample-balloons.jpg" data-frame="steel" data-mount="black" alt=""><figcaption>steel · black mount</figcaption></figure>
+  <figure><img src="demo/sample-crow.jpg" data-frame="black" data-k=".03" alt=""><figcaption>black, slim</figcaption></figure>
+  <figure><img src="demo/sample-balloons.jpg" data-frame="gold" alt=""><figcaption>gold leaf</figcaption></figure>
+  <figure><img src="demo/sample-crow.jpg" data-frame="ash" data-k=".09" alt=""><figcaption>natural ash, wide</figcaption></figure>
+  <figure><img src="demo/sample-balloons.jpg" data-frame="box" alt=""><figcaption>shadow box</figcaption></figure>
+</div>
+<script src="frames.js"></script>
+</body>
+</html>

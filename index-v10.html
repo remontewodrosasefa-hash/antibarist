@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ecebe8">
+<title>Antibarist · prototype v10</title>
+<link rel="stylesheet" href="frameworks-frames/frames.css">
+<script src="frameworks-frames/frames.js" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* black and white interface. the coffees, labels, Hoa and the real Frameworks mouldings (frameworks-frames/) keep their colour */
+:root{
+  --paper:#ecebe8; --bar:#f7f7f5; --ink:#111; --mute:#6d6d6a; --line:#cfcecb; --soft:#dcdbd7;
+  --title:'Amatic SC',cursive; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --top:52px; --dock:52px;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--paper);color:var(--ink);font:400 13px/1.55 var(--mono);overflow:hidden;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:inherit}
+a{color:inherit}
+img{display:block;-webkit-user-drag:none;user-select:none}
+.k{font:500 10.5px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute)}
+
+/* top */
+.top{position:fixed;inset:0 0 auto 0;height:calc(var(--top) + var(--sat));padding:var(--sat) 14px 0;display:flex;align-items:center;gap:12px;z-index:40;background:var(--bar);border-bottom:1.5px solid var(--ink)}
+.logo{background:var(--ink);color:var(--bar);font:700 20px/1 var(--title);letter-spacing:2px;padding:5px 11px 3px;position:relative;flex:none}
+.logo i{font-style:normal;font-size:10px;position:absolute;left:3px;top:1px}
+.logo i+i{left:auto;top:auto;right:3px;bottom:0;transform:rotate(180deg)}
+.status{white-space:nowrap;font-size:11px;line-height:1.25;color:var(--mute);display:flex;align-items:center;gap:7px}
+.status .d{width:7px;height:7px;border-radius:50%;background:var(--ink);border:1.5px solid var(--ink);flex:none}
+body.closed .status .d{background:transparent}
+.status b{font-weight:500;color:var(--ink);display:block}
+.sp{flex:1}
+.here{font-size:11px;color:var(--mute);display:flex;align-items:center;gap:6px}
+.here svg{width:22px;height:11px}
+.tune{width:28px;height:28px;display:grid;place-items:center}
+
+/* the map: one big wall you can move around in every direction */
+.map{position:fixed;left:0;right:0;top:calc(var(--top) + var(--sat));bottom:calc(var(--dock) + var(--sab));overflow:scroll;scrollbar-width:none;overscroll-behavior:contain;touch-action:pan-x pan-y;cursor:grab}
+.map::-webkit-scrollbar{display:none}
+.map.dragging{cursor:grabbing}
+.map.dragging *{cursor:grabbing!important}
+.world{position:relative;user-select:none;-webkit-user-select:none;margin:0 auto}
+.it{position:absolute;cursor:pointer;transition:opacity .35s}
+.it:focus{outline:none}
+.it:focus-visible{outline:1.5px solid var(--ink);outline-offset:6px}
+.world.filtering .it[data-r]:not(.on){opacity:.12}
+.old{opacity:.5;filter:grayscale(1)}
+.old:hover{opacity:.8}
+.intro{cursor:default;text-align:center;width:fit-content;margin:0 auto;padding:8px 12px}
+.intro p{font-size:12.5px;line-height:1.55}
+.info{cursor:pointer}
+@media (max-width:899px){.world .cap{font-size:14px}.sn text{font-size:16px}.blabel .bn{font-size:13px}.intro p{font-size:15px}.intro .k{font-size:13px}.live b,.live span#lastMsg{font-size:12.5px}.block p,.hrs div{font-size:14px}.block .k{font-size:12.5px}}
+.cap{display:inline-block;background:var(--paper);padding:5px 8px 6px;font:500 12px/1.3 var(--mono);color:var(--ink);margin-top:8px;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.cap b{font-weight:500;display:block}
+.cap span{display:block;color:var(--mute);text-transform:none;letter-spacing:.02em;font-weight:400}
+.streets{position:absolute;left:0;top:0;pointer-events:none}
+.sn text{font:500 14px var(--mono);letter-spacing:3px;fill:var(--ink)}
+.blabel{cursor:default}
+.blabel .bl{display:inline-block;background:var(--paper);font:700 50px/1 var(--title);letter-spacing:.03em;padding:4px 12px 0;text-transform:uppercase}
+.blabel .bn{display:table;background:var(--paper);font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute);padding:5px 12px 6px}
+.blabel.arch .bn{color:#9a9995}
+.chip{background:var(--paper);padding:12px 14px}
+.br{background:var(--ink);color:var(--bar);position:relative;padding:18px 22px}
+.brt{font:700 46px/.9 var(--title);letter-spacing:.04em;text-transform:uppercase}
+.br .eyes{top:118px}
+.br .live{position:absolute;left:22px;right:22px;bottom:18px;width:auto;margin:0}
+.br .live b{color:var(--bar)}
+.br .live b i{background:var(--bar)}
+.br #lastMsg{color:#a9a8a4}
+.spec img{width:100%;mix-blend-mode:multiply}
+.h-wall{font:700 42px/.9 var(--title);letter-spacing:.02em;cursor:default;text-align:center}
+.q-mid{font:700 40px/1 var(--title);letter-spacing:.02em;text-align:center;cursor:default}
+.h-wall .k{display:block;margin-bottom:6px}
+.quote-big{font:700 38px/1.02 var(--title);letter-spacing:.02em;cursor:default}
+.quote-big .k{display:block;margin-top:10px}
+
+/* the centre: Hoa + the back room */
+.hoa img{width:100%}
+body.closed .hoa img{opacity:.28}
+.hoa .off{display:none}
+body.closed .hoa .on{display:none}
+body.closed .hoa .off{display:block}
+.door{background:var(--ink);height:205px;position:relative}
+.door .bk{position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--bar);font:700 40px/.85 var(--title);letter-spacing:.04em}
+.eyes{position:absolute;left:50%;top:62px;width:56px;height:30px;transform:translateX(-50%);display:flex;justify-content:space-between;align-items:center}
+.eyes i{width:13px;height:9px;background:var(--bar);border-radius:50%;animation:blink 5.5s infinite}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+.live{margin-top:9px;width:150px}
+.live b{display:block;font:500 10px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.live b i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ink);margin-right:6px;vertical-align:1px;animation:pulse 2.4s infinite}
+@keyframes pulse{50%{opacity:.25}}
+.live span#lastMsg{display:block;font:400 10px/1.3 var(--mono);color:var(--mute);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:2px}
+.poster{background:var(--ink);color:var(--bar);padding:18px 18px 20px}
+.poster .k{color:#a9a8a4}
+.poster h3{font:700 46px/.88 var(--title);letter-spacing:.02em;margin:10px 0 12px}
+.poster p{font-size:11px;line-height:1.5}
+.block .t{font:700 30px/1 var(--title);letter-spacing:.02em;margin:6px 0 8px}
+.block p{font-size:11.5px;line-height:1.55}
+.block .u{display:inline-block;border-bottom:1px solid var(--ink);font:500 10.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:12px 0 3px}
+.hrs div{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:5px 0;font-size:11.5px}
+.idx .row{display:flex;gap:10px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line);font-size:11.5px;width:100%}
+.idx .row i{font-style:normal;color:var(--mute);width:20px;flex:none}
+.idx .row span{flex:1}
+.idx .row em{font-style:normal;color:var(--mute);font-size:10px}
+
+/* visitor cats walk anywhere on the map */
+.cat{position:absolute;width:58px;transform:translate(-50%,-100%);cursor:pointer;z-index:30}
+.cat svg{width:100%;height:auto;overflow:visible;display:block}
+.cat svg path{fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.cat.you svg path{stroke-width:6.5}
+.cat .flip{transform-box:fill-box;transform-origin:center}
+.cat.right .flip{transform:scaleX(-1)}
+.cat .lb,.cat .ls{display:none}
+.cat.walk .la{animation:la .38s steps(1) infinite}
+.cat.walk .lb{display:inline;animation:lb .38s steps(1) infinite}
+@keyframes la{50%{opacity:0}}
+@keyframes lb{0%{opacity:0}50%{opacity:1}}
+.cat.sit .la{display:none}.cat.sit .ls{display:inline}
+.cat .tail{transform-box:view-box;transform-origin:100px 31px;animation:tail 2.4s ease-in-out infinite}
+@keyframes tail{50%{transform:rotate(-8deg)}}
+.cat .nm{position:absolute;left:50%;top:100%;transform:translateX(-50%);font:500 10px/1 var(--mono);color:var(--ink);white-space:nowrap;letter-spacing:.04em;margin-top:2px;padding:2px 3px}
+.cat.you .nm{background:var(--ink);color:var(--bar)}
+
+.pop{position:absolute;z-index:50;background:var(--bar);border:1.5px solid var(--ink);padding:14px 16px 16px;width:250px;transform:translate(-50%,-100%);cursor:default}
+.pop .t{font:700 28px/1 var(--title)}
+.pop p{font-size:12px;line-height:1.45;color:var(--mute);margin:4px 0 12px}
+.pop .k{margin-bottom:4px}
+.pacts{display:flex;align-items:center;gap:16px}
+.plink{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid var(--ink);padding-bottom:3px}
+.pop input{font:400 14px var(--mono);border:0;border-bottom:1px solid var(--ink);width:100%;padding:6px 0;margin-bottom:12px;background:transparent;outline:0;color:var(--ink);user-select:text}
+.pop .act{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em;background:var(--ink);color:var(--bar);padding:10px 14px}
+
+/* dock: region tabs + ask hoa, one row */
+.dock{position:fixed;left:0;right:0;bottom:0;height:calc(var(--dock) + var(--sab));padding-bottom:var(--sab);z-index:40;background:var(--bar);border-top:1.5px solid var(--ink);display:flex}
+.regions{flex:1;min-width:0;display:flex;gap:18px;overflow-x:auto;scrollbar-width:none;padding:0 14px;align-items:center}
+.regions::-webkit-scrollbar{display:none}
+.rg{flex:none;font:500 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute);padding:5px 0;border-bottom:1.5px solid transparent}
+.rg.on{color:var(--ink);border-color:var(--ink)}
+.rg sup{font-size:9px;margin-left:2px}
+.btn-ask{flex:none;background:var(--ink);color:var(--bar);font:700 25px/1 var(--title);letter-spacing:.06em;padding:3px 20px 0}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.16);opacity:0;pointer-events:none;transition:opacity .3s;z-index:55}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;height:88dvh;background:var(--bar);z-index:60;border-top:1.5px solid var(--ink);transform:translateY(102%);transition:transform .4s cubic-bezier(.3,.9,.3,1);display:flex;flex-direction:column}
+.sheet.open{transform:none}
+.sheet.short{height:auto;max-height:88dvh}
+.grab{flex:none;height:22px;display:flex;justify-content:center;align-items:center;touch-action:none;cursor:grab}
+.grab i{width:34px;height:3px;background:var(--line);border-radius:2px}
+.shead{flex:none;display:flex;align-items:flex-start;padding:2px 18px 14px;gap:12px}
+.shead .t{flex:1;min-width:0}
+.shead h2{font:700 44px/.95 var(--title);letter-spacing:.02em;margin-top:6px}
+.shead .sub{color:var(--mute);margin-top:4px;font-size:12px}
+.x{font:500 10.5px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute);padding:6px 0 6px 10px}
+.sbody{flex:1;overflow-y:auto;padding:0 18px calc(28px + var(--sab))}
+.sbody p{margin-bottom:12px}
+.rule{height:1px;background:var(--line);margin:18px 0}
+.labelimg{margin:0 0 18px;background:var(--soft);padding:22px}
+.labelimg img{width:72%;margin:0 auto;mix-blend-mode:multiply}
+.rows div{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line)}
+.rows dt{font:500 10.5px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute);padding-top:2px}
+.rows dd{text-align:right}
+.tbc{border-bottom:1px dashed var(--ink)}
+.char{font:700 30px/1.1 var(--title);letter-spacing:.03em;margin:4px 0 16px}
+.quote{font:700 26px/1.15 var(--title);letter-spacing:.02em;margin:6px 0 16px}
+.quote+.k{margin-top:-8px}
+.recipe{display:grid;grid-template-columns:repeat(4,1fr);margin:8px 0 6px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.recipe div{padding:10px 0 9px;font:500 9.5px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--mute);text-align:center}
+.recipe div+div{border-left:1px solid var(--line)}
+.recipe b{display:block;font:700 30px/1.05 var(--title);color:var(--ink);letter-spacing:0}
+.note-ph{font-size:10.5px;color:var(--mute);margin:8px 0 20px}
+.primary{display:block;width:100%;background:var(--ink);color:var(--bar);font:500 11.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.14em;padding:16px;text-align:center;text-decoration:none}
+.link{display:inline-block;font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.12em;border-bottom:1px solid currentColor;padding:14px 0 3px;margin-top:4px;text-decoration:none}
+.acts{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.acts .primary{margin-bottom:6px}
+
+/* crate */
+.filters{display:flex;gap:16px;margin:0 0 16px;overflow-x:auto;scrollbar-width:none}
+.crate{display:grid;grid-template-columns:1fr 1fr;gap:22px 14px}
+.card .im{aspect-ratio:1;background:var(--soft) center/cover;margin-bottom:8px;box-shadow:inset 0 0 0 12px var(--soft),0 0 0 1.5px var(--ink)}
+.card b{display:block;font:700 22px/1 var(--title);letter-spacing:.02em}
+.card span{font-size:10.5px;color:var(--mute)}
+
+/* events */
+.ev{padding:4px 0 18px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.ev h4{font:700 32px/.95 var(--title);margin:8px 0 8px;letter-spacing:.02em}
+.hours{width:100%;border-collapse:collapse;margin-bottom:14px}
+.hours td{padding:8px 0;border-bottom:1px solid var(--line)}
+.hours td:last-child{text-align:right}
+.hours tr.today td{font-weight:500;text-decoration:underline}
+
+/* chat */
+.topics{flex:none;display:flex;gap:16px;overflow-x:auto;padding:0 18px;border-bottom:1px solid var(--line);scrollbar-width:none}
+.topics::-webkit-scrollbar{display:none}
+.topic{flex:none;font:500 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute);padding:4px 0 10px;border-bottom:1px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.topic.on{color:var(--ink);border-color:var(--ink)}
+.chat{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:16px}
+.m{max-width:86%}
+.m .who{font:500 10px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--mute);margin-bottom:2px}
+.m.h{padding-left:10px;border-left:2px solid var(--ink)}
+.m.h .who{color:var(--ink)}
+.m.me{align-self:flex-end;text-align:right}
+.m.me .who{color:var(--ink)}
+.sys{font-size:10.5px;color:var(--mute);border-bottom:1px solid var(--line);padding-bottom:12px}
+.typing{font-size:11px;color:var(--mute)}
+.compose{flex:none;display:flex;gap:12px;padding:10px 18px calc(12px + var(--sab));border-top:1px solid var(--line);align-items:center}
+.compose input{flex:1;min-width:0;border:0;background:transparent;font:400 14px var(--mono);outline:0;padding:10px 0;color:var(--ink)}
+.compose button{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.12em}
+.locked{padding:40px 0;text-align:center}
+.locked .quote{margin-bottom:8px}
+
+/* ask hoa */
+.hoa-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.hoa-head img{width:54px;height:54px;object-fit:cover;object-position:50% 8%;border-radius:50%;background:var(--soft);border:1.5px solid var(--ink)}
+.prog{display:flex;gap:4px;margin-bottom:18px}
+.prog i{flex:1;height:2px;background:var(--line)}.prog i.on{background:var(--ink)}
+.say{font:700 36px/1.02 var(--title);letter-spacing:.02em;margin-bottom:18px}
+.opts button{display:flex;justify-content:space-between;align-items:center;width:100%;padding:15px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.opts button:first-child{border-top:1px solid var(--line)}
+.opts button::after{content:"→";color:var(--mute)}
+.opts button:active{background:var(--soft)}
+.pick{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);width:100%}
+.pick .im{width:64px;height:64px;flex:none;background:var(--soft) center/cover;box-shadow:inset 0 0 0 6px var(--soft),0 0 0 1.5px var(--ink)}
+.pick b{font:700 24px/1 var(--title);display:block;letter-spacing:.02em}
+.pick span{font-size:11px;color:var(--mute)}
+
+/* toast, demo */
+.toast{position:fixed;left:14px;right:14px;top:calc(var(--top) + var(--sat) + 8px);z-index:90;background:var(--ink);color:var(--bar);font-size:11.5px;padding:10px 14px;opacity:0;transform:translateY(-6px);transition:.25s;pointer-events:none;text-align:center}
+.toast.on{opacity:1;transform:none}
+.demo{position:fixed;right:10px;top:calc(var(--top) + var(--sat) + 4px);z-index:45;background:var(--bar);border:1.5px solid var(--ink);padding:10px 14px;display:none;flex-direction:column;width:240px}
+.demo.on{display:flex}
+.demo button{padding:9px 0;border-bottom:1px solid var(--line);font-size:12px}
+.demo button:last-child{border:0}
+
+/* ===== v10 redesign: bars as cells, popups as caption cards, sheets with one pinned action ===== */
+/* top bar: logo + status left, square icon cells on the right split by lines */
+.top{padding-right:0;align-items:stretch}
+.top .logo,.top .status{align-self:center}
+.cell{display:flex;align-items:center;justify-content:center;gap:6px;min-width:46px;padding:0 12px;border-left:1.5px solid var(--ink)}
+.cell:active{background:var(--soft)}
+.here{font:500 12px/1 var(--mono);color:var(--ink)}
+/* bottom bar: equal tab cells, active one gets a thick top line, ask hoa with his face */
+.dock .regions{gap:0;padding:0;overflow:hidden;align-items:stretch}
+.dock .rg{flex:1 1 0;min-width:0;text-align:center;padding:0 2px;border:0;border-right:1px solid var(--line);font-size:10px;letter-spacing:.08em;white-space:nowrap}
+.dock .rg.on{box-shadow:inset 0 3px 0 var(--ink)}
+.btn-ask{display:flex;align-items:center;gap:9px;padding:0 16px 0 10px}
+.btn-ask img{width:32px;height:32px;border-radius:50%;object-fit:cover;object-position:50% 6%;background:var(--soft)}
+/* popups: a card with the info on top and a row of actions at the bottom, pinned to the thing with a small arrow */
+.pop{padding:0;width:232px;transform:translate(-50%,-100%)}
+.pop::after{content:"";position:absolute;left:var(--ax,50%);top:100%;margin-left:-7px;border:7px solid transparent;border-top-color:var(--ink)}
+.pb{padding:12px 14px 13px}
+.pop .t{font:700 30px/1 var(--title)}
+.pop p{margin:3px 0 0}
+.pop input{margin:10px 0 0}
+.pa{display:flex;border-top:1.5px solid var(--ink)}
+.pa button{flex:1;padding:13px 8px;text-align:center;font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em;border:0}
+.pa .act{background:var(--ink);color:var(--bar);padding:13px 8px}
+/* sheets: the content scrolls, the one action stays pinned at the bottom */
+.shead{border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:16px}
+.sfoot{flex:none;display:flex;align-items:center;gap:18px;padding:12px 18px calc(12px + var(--sab));border-top:1.5px solid var(--ink);background:var(--bar)}
+.sfoot .primary{flex:1;width:auto}
+.sfoot .link{margin:0;padding:0 0 3px;flex:none}
+.sbody{padding-bottom:20px}
+.specs{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:18px 0}
+.specs div{padding:10px 0;font-size:13px}
+.specs div+div{border-left:1px solid var(--line);padding-left:14px}
+.specs .k{display:block;margin-bottom:3px}
+.hero{background:var(--soft);margin:0 0 16px;display:flex;justify-content:center;padding-top:14px}
+.hero img{width:56%;max-width:220px}
+.days{display:grid;grid-template-columns:repeat(3,1fr);border:1.5px solid var(--ink);margin-top:6px}
+.days button{text-align:center;padding:16px 4px;font-size:13px}
+.days button+button{border-left:1.5px solid var(--ink)}
+.days button.on{background:var(--ink);color:var(--bar)}
+.field{display:block;width:100%;font:400 16px var(--mono);border:0;border-bottom:1.5px solid var(--ink);background:transparent;padding:10px 0;margin:4px 0 22px;outline:0;color:var(--ink)}
+.evp{background:var(--ink);color:var(--bar);padding:18px 18px 20px;margin-bottom:16px}
+.evp .k{color:#a9a8a4}
+.evp h4{font:700 44px/.9 var(--title);letter-spacing:.02em;margin:10px 0 8px}
+.evp p{font-size:12px;margin:0}
+.row1{display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--line);margin-bottom:22px}
+.row1 b{font:700 26px/1 var(--title);letter-spacing:.02em}
+.row1 span{font-size:11px;color:var(--mute)}
+
+@media (min-width:900px){
+  .sheet{left:auto;right:0;top:calc(var(--top) + var(--sat));bottom:0;width:420px;height:auto;max-height:none;border-top:0;border-left:1.5px solid var(--ink);transform:translateX(102%)}
+  .sheet.open{transform:none}
+  .grab{display:none}
+  .shead{padding-top:20px}
+  .scrim{background:transparent}
+  .toast{left:50%;right:auto;transform:translate(-50%,-6px);width:420px}
+  .toast.on{transform:translate(-50%,0)}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:899px){.live{width:160px}.live b,.live span#lastMsg{font-size:12.5px}}
+
+/* landing: a plain, readable front page before you step into the map */
+.cover{position:fixed;inset:0;z-index:80;background:var(--paper);overflow-y:auto;transition:transform .6s cubic-bezier(.6,0,.3,1),opacity .6s;padding:calc(20px + var(--sat)) 24px calc(28px + var(--sab))}
+.cover.gone{transform:translateY(-100%);opacity:0;pointer-events:none}
+.cv{max-width:980px;margin:0 auto;display:grid;gap:18px}
+.cv-logo{justify-self:start;background:var(--ink);color:var(--bar);font:700 36px/1 var(--title);letter-spacing:4px;padding:8px 18px 4px}
+.cv h1{font:700 52px/.92 var(--title);letter-spacing:.01em}
+.cv-hoa{width:min(52vw,240px);justify-self:center}
+.cv p{font-size:16px;line-height:1.6}
+.cv-st{font:500 13px/1.5 var(--mono);text-transform:uppercase;letter-spacing:.1em;border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink);padding:12px 0}
+.cv-st span{display:block;color:var(--mute);text-transform:none;letter-spacing:.02em;font-weight:400}
+.cv .primary{font-size:14px;padding:19px}
+.cv-links{display:flex;gap:24px;flex-wrap:wrap}
+.cv-links .link{font-size:12.5px}
+.cv-here{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mute)}
+.cv-here svg{width:30px;height:14px}
+@media (min-width:900px){
+  .cv-logo{font-size:44px}
+  .cover{display:grid;place-items:center}
+  .cv{grid-template-columns:1fr 1.1fr;column-gap:64px;align-items:center}
+  .cv-hoa{grid-row:1 / span 7;grid-column:1;width:100%;max-width:420px}
+  .cv>*:not(.cv-hoa){grid-column:2}
+  .cv h1{font-size:84px}
+}
+</style>
+</head>
+<body>
+
+<section class="cover" id="cover" aria-label="welcome">
+  <div class="cv">
+    <div class="cv-logo">ANTIBARIST</div>
+    <img class="cv-hoa" src="img/hoa-cut.png" alt="Hoa">
+    <h1>coffee, cats<br>and good company</h1>
+    <p>Hoa makes coffee in the back of Frameworks, a framing shop in Kreuzberg. no fuss, no lectures. come for a cup, stay for a chat.</p>
+    <div class="cv-st" id="cvSt"></div>
+    <button class="primary" id="enterBtn">step inside</button>
+    <div class="cv-here"><svg viewBox="0 0 140 60"><path d="M8 36 L12 16 L18 27 L23 14 L27 28 L100 28 M100 28 L137 12 L134 18 L100 33 M8 36 L18 38 L14 52 L22 44 L24 54 L30 38 L84 34 L80 50 L88 42 L90 52 L100 33" fill="none" stroke="#111" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b id="cvHere">0</b> people inside right now</span></div>
+    <div class="cv-links"><button class="link" id="cvAsk">ask hoa what to drink</button><a class="link" href="https://t.me/antibarist" target="_blank" rel="noopener">telegram</a></div>
+  </div>
+</section>
+
+<header class="top">
+  <div class="logo"><i>A</i>ANTIBARIST<i>A</i></div>
+  <div class="status"><span class="d"></span><div id="statusTxt"></div></div>
+  <div class="sp"></div>
+  <button class="cell here" id="hereBtn" aria-label="people here now"><svg viewBox="0 0 140 60"><path d="M8 36 L12 16 L18 27 L23 14 L27 28 L100 28 M100 28 L137 12 L134 18 L100 33 M8 36 L18 38 L14 52 L22 44 L24 54 L30 38 L84 34 L80 50 L88 42 L90 52 L100 33" fill="none" stroke="#111" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="hereN">0</span></button>
+  <button class="cell" id="homeBtn" aria-label="back to the counter"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#111" stroke-width="1.5"><circle cx="10" cy="10" r="5.5"/><path d="M10 1v5M10 14v5M1 10h5M14 10h5"/></svg></button>
+  <button class="cell" id="demoBtn" aria-label="demo controls"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round"><path d="M3 6h14M3 14h14"/><circle cx="7" cy="6" r="2" fill="#f7f7f5"/><circle cx="13" cy="14" r="2" fill="#f7f7f5"/></svg></button>
+</header>
+
+<div class="demo" id="demo">
+  <span class="k" style="margin-bottom:4px">demo controls</span>
+  <button data-d="in">someone opens the site</button>
+  <button data-d="out">someone leaves</button>
+  <button data-d="msg">fake Telegram message</button>
+  <button data-d="open">switch open / closed</button>
+</div>
+
+<main class="map" id="map">
+  <div class="world" id="world"></div>
+</main>
+
+<nav class="dock">
+  <div class="regions" id="regions"></div>
+  <button class="btn-ask" id="askBtn"><img src="img/hoa-cut.png" alt=""><span>ask hoa</span></button>
+</nav>
+
+<div class="scrim" id="scrim"></div>
+<aside class="sheet" id="sheet" aria-hidden="true">
+  <div class="grab" id="grab"><i></i></div>
+  <div class="shead"><div class="t" id="shead"></div><button class="x" id="sclose">close</button></div>
+  <div id="sslot" style="flex:1;min-height:0;display:flex;flex-direction:column"></div>
+</aside>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const map=$('map'),world=$('world'),sheet=$('sheet'),sslot=$('sslot');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+/* ================= DATA ================= */
+// labels Hoa sent. origin:null = still to confirm. short = name in the caption
+const COFFEES={
+  granja:{short:'granja',farm:'Granja Paraíso 92',producer:'Wilton Benitez',variety:'Orange Bourbon',process:'Fermentation washed',character:['silky','velvety','sirupy'],roaster:'liquid dream.',origin:'Colombia',region:'colombia'},
+  nogales:{short:'los nogales',farm:'Los Nogales',producer:'Oscar Hernández',variety:'Bourbon Pimienta',process:'Anaerobic washed',character:['sparkling','juicy','complex'],roaster:'liquid dream.',origin:'Colombia',region:'colombia'},
+  latorre:{short:'la torre',farm:'La Torre',producer:'Marleny Imbachi',variety:'Gesha',process:'Washed',character:['juicy','delicate','floral'],roaster:'liquid dream.',origin:null,region:'colombia'},
+  girasol:{short:'girasol',farm:'El Girasol',producer:'Nicolas Medina',variety:'Pink Bourbon',process:'Washed',character:[],roaster:'SEY',origin:'Colombia',region:'colombia'},
+  casita:{short:'casita',farm:'La Casita · Curtain Call',producer:'David Berrio',variety:'Chiroso',process:'Washed',character:[],roaster:'SEY',origin:'Colombia',region:'colombia'},
+  diamante:{short:'diamante',farm:'El Diamante · Surprise Encore',producer:'Duber Mejia',variety:'Chiroso',process:'Washed',character:[],roaster:'SEY',origin:'Colombia',region:'colombia'},
+  geshe:{short:'geshe',farm:'Geshe',producer:'',variety:'Ethiopian Landrace',process:'White honey',character:[],roaster:'SEY',origin:'Ethiopia',region:'ethiopia'},
+  jaime:{short:'sánchez',farm:'Las Flores',producer:'Jaime Sánchez',variety:'Gesha',process:'Washed',character:['crisp','floral','vibrant'],roaster:'liquid dream.',origin:null,region:'more'},
+  fernando:{short:'melgar',farm:'Las Flores',producer:'Fernando Melgar',variety:'Gesha',process:'Natural',character:['velvety','smooth','floral'],roaster:'liquid dream.',origin:null,region:'more'},
+  mazateca:{short:'mazateca',farm:'Mazateca',producer:'Renato Martínez',variety:'Typica',process:'Washed',character:['juicy','winey','velvety'],roaster:'liquid dream.',origin:null,region:'more'},
+  romerillo:{short:'romerillo',farm:'El Romerillo',producer:'Clever Acosta',variety:'Sidra',process:'Washed',character:['crisp','elegant','floral'],roaster:'liquid dream.',origin:null,region:'more'},
+  panama:{short:'panamá',farm:'Digna Nuñez x Lost Origin',producer:'Digna Nuñez',variety:'Gesha',process:'Washed',character:[],roaster:'SEY',origin:'Panama',region:'more'}
+};
+const REGIONS=[['all','all'],['colombia','colombia'],['ethiopia','ethiopia'],['more','more']];
+const NAMES=['mila','jonas','ece','luca','noor','sami','kai','yuki','ben','tabea'];
+const FROM=['Neukölln','Kreuzberg','Wedding','Hamburg','Milano','Lisbon','Friedrichshain','Moabit'];
+
+/* ================= THE COFFEE DISTRICT =================
+   the canvas is an abstract street map (like a printed district map). blocks are hatched, streets are the empty space.
+   each origin is a block, roughly where it is in the world (panama above colombia, ethiopia + kenya on the right),
+   the back room is the one solid black block in the middle. streets are named after the producers.
+   the outskirts are the archive: older coffees, lighter hatching, grey frames.
+   all numbers are px on the canvas (WORLD). */
+const WORLD={w:3300,h:2720};
+const HOME=[1620,640]; // where the view starts: the back room + Hoa
+// a world of coffee, roughly where each country is on the globe: the americas left, berlin (the back room) in the middle,
+// africa and yemen right of it, asia on the far right. countries with nothing on the wall yet are lighter.
+const C=(label,x,y,w,h,coffees=[])=>({label,x,y,w,h,coffees});
+const BLOCKS=[
+  // the americas
+  C('mexico',200,300,500,260), C('guatemala',760,300,240,260), C('honduras',1060,300,240,260),
+  C('nicaragua',200,620,500,180), C('el salvador',760,620,240,180), C('costa rica',1060,620,240,180),
+  C('ecuador',200,860,300,270), C('colombia',560,860,440,710,['latorre','granja','nogales','girasol','diamante','casita']), C('panama',1060,860,240,300,['panama']),
+  C('peru',200,1190,300,380), C('jamaica',1060,1220,240,350),
+  C('bolivia',200,1630,300,570), C('brazil',560,1630,740,570),
+  // berlin: the back room + the counter, then the coffees we still have to place, and what's on
+  {x:1400,y:620,w:440,h:420,counter:true},
+  C('origin to confirm',1400,1100,440,560,['jaime','fernando','mazateca','romerillo']),
+  {x:1400,y:1720,w:440,h:300,info:['event']},
+  {x:1400,y:2080,w:440,h:260,info:['hours','crate']},
+  // africa + yemen
+  {x:1940,y:300,w:580,h:260,info:['about','telegram']},
+  C('dr congo',1940,620,200,330), C('ethiopia',2200,620,320,330,['geshe']),
+  C('uganda',1940,1010,200,260), C('kenya',2200,1010,320,260),
+  C('rwanda',1940,1330,200,200), C('burundi',1940,1590,200,200), C('tanzania',2200,1330,320,460),
+  C('malawi',1940,1850,200,200), C('zambia',2200,1850,320,200),
+  // asia
+  C('yemen',2620,300,220,260), C('china',2900,300,200,260),
+  C('india',2620,620,220,330), C('vietnam',2900,620,200,330),
+  C('thailand',2620,1010,220,260), C('myanmar',2900,1010,200,260),
+  C('indonesia',2620,1330,480,460), C('papua new guinea',2620,1850,480,200),
+  // the old town: the archive. PLACEHOLDERS, names + pictures come from Hoa
+  {x:1940,y:2110,w:1160,h:230,archive:'oct 2026'},
+  {x:200, y:2400,w:2900,h:230,archive:'sep 2026'}
+];
+const BACKROOM={x:1400,y:300,w:440,h:260};
+// streets: the gaps between blocks. cats walk here. the oceans are the big avenues. n = name, set along the street.
+// hug = keep the name close to the berlin side, so a phone sees both names at the edges of the first screen
+const STREETS=[
+  {x:1300,y:300, w:100,h:2040,n:'the atlantic',at:700,hug:'r'},
+  {x:2520,y:300, w:100,h:1750,n:'the red sea',at:1000},
+  {x:1840,y:300, w:100,h:2040,n:'wilton benitez st',at:700,hug:'l'},
+  {x:500, y:860, w:60, h:1340,n:'oscar hernández st',at:1400},
+  {x:1000,y:300, w:60, h:1270,n:'marleny imbachi st',at:1150},
+  {x:2140,y:620, w:60, h:1430,n:'digna nuñez st',at:1300},
+  {x:2840,y:300, w:60, h:970, n:'jaime sánchez st',at:800},
+  {x:200, y:560, w:2900,h:60, n:'nicolas medina st',at:1620},
+  {x:200, y:800, w:1100,h:60, n:'david berrio st'},
+  {x:200, y:1570,w:1100,h:60, n:'duber mejia st'},
+  {x:1400,y:1040,w:440,h:60, n:'fernando melgar st'},
+  {x:1400,y:1660,w:440,h:60, n:'renato martínez st'},
+  {x:1940,y:950, w:1160,h:60, n:'clever acosta st'},
+  {x:1940,y:1270,w:1160,h:60},
+  {x:1940,y:2050,w:1160,h:60},
+  {x:200, y:2340,w:2900,h:60}
+];
+const NOW=150,OLD=104;
+
+function put(x,y,w,html,cls='',attrs){
+  const el=document.createElement('div');
+  el.className='it '+cls;el.style.cssText=`left:${x}px;top:${y}px;width:${w}px`;
+  el.innerHTML=html;
+  attrs&&Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));
+  world.appendChild(el);return el;
+}
+const kbd=el=>{el.tabIndex=0;el.setAttribute('role','button');el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click()}});return el};
+const oldArt=m=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="#dddcd8"/><text x="200" y="214" text-anchor="middle" font-family="monospace" font-size="30" letter-spacing="6" fill="#a9a8a4">${m.split(' ')[0].toUpperCase()}</text></svg>`);
+
+// the map itself: hatched blocks + street names, one svg under everything
+function mapSVG(){
+  const blocks=BLOCKS.map(b=>`<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="url(#${b.archive?'h2':b.label&&!b.coffees.length?'h3':'h1'})"/>`).join('');
+  const names=STREETS.filter(s=>s.n).map(s=>{
+    const v=s.h>s.w,cx=s.hug==='r'?s.x+s.w-16:s.hug==='l'?s.x+16:s.x+s.w/2,cy=v?(s.at||s.y+s.h/2):s.y+s.h/2;
+    return `<text x="${cx}" y="${cy}" transform="${v?`rotate(-90 ${cx} ${cy})`:''}" text-anchor="middle" dominant-baseline="central">${s.n.toUpperCase()}</text>`;
+  }).join('');
+  return `<svg class="streets" width="${WORLD.w}" height="${WORLD.h}" viewBox="0 0 ${WORLD.w} ${WORLD.h}">
+    <defs>
+     <pattern id="h1" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#a9a9a4" stroke-width="1.4"/></pattern>
+     <pattern id="h3" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#c3c2bd" stroke-width="1.2"/></pattern>
+     <pattern id="h2" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#cfcec9" stroke-width="1.2"/></pattern>
+    </defs>${blocks}<rect x="${BACKROOM.x}" y="${BACKROOM.y}" width="${BACKROOM.w}" height="${BACKROOM.h}" fill="#111"/>
+    <g class="sn">${names}</g></svg>`;
+}
+// lay things out in an even grid, centred in a block (below its label)
+function gridIn(b,n,size,cellW,cellH,top){
+  const cols=Math.max(1,Math.min(n,Math.floor((b.w-20)/cellW))),rows=Math.ceil(n/cols);
+  const x0=b.x+(b.w-cols*cellW)/2,y0=b.y+top+((b.h-top)-rows*cellH)/2;
+  return [...Array(n)].map((_,i)=>[x0+(i%cols)*cellW+(cellW-size)/2,y0+Math.floor(i/cols)*cellH]);
+}
+
+function nowFrame(id,x,y){
+  const co=COFFEES[id];
+  const el=kbd(put(x,y,NOW,`<img src="img/${id}-art.jpg" data-frame="oak" data-mount="white" data-k=".05" style="width:${NOW}px" alt="${esc(co.farm)}"><div class="cap"><b>${esc(co.short)}</b><span>${esc(co.roaster)}</span></div>`,'fr',{'data-r':co.region,'data-id':id}));
+  el.onclick=e=>{e.stopPropagation();coffeePop(id,el)};
+}
+function oldFrame(x,y,month,n){
+  const el=kbd(put(x,y,OLD,`<img src="${oldArt(month)}" data-frame="grey" data-mount="none" data-k=".05" style="width:${OLD}px" alt="past coffee, ${month}"><div class="cap"><b>archive ${String(n).padStart(2,'0')}</b><span>${month}</span></div>`,'old'));
+  el.onclick=e=>{e.stopPropagation();showPop(el.querySelector('.fwf')||el,`<div class="pb"><div class="k">archive · ${month}</div><div class="t">sold out</div></div><div class="pa"><button class="act" id="popGo">ask if it comes back</button></div>`,()=>{$('popGo').onclick=()=>{closePop();openChat('hey Hoa, will the coffee from '+month+' come back? ')}})};
+}
+const INFO={
+  event:[230,`<div class="poster"><div class="k">sat 14 nov · 12 - 18</div><h3>brew your<br>own cup</h3><p>antibarist x luko<br>the playce at studio 5</p></div>`,()=>openEvents()],
+  hours:[170,`<div class="chip block hrs"><div class="k" style="margin-bottom:6px">hours</div><div><span>tue-fri</span><span>8-16</span></div><div><span>sat</span><span>9-17</span></div><div><span>sun, mon</span><span>closed</span></div></div>`,()=>openEvents()],
+  about:[150,`<div class="chip block"><div class="k">about</div><div class="t">not your typical barista</div><span class="u">read</span></div>`,()=>openAbout()],
+  telegram:[150,`<div class="chip block"><div class="k">telegram</div><div class="t">120 in the group</div><span class="u">join</span></div>`,()=>window.open('https://t.me/antibarist','_blank','noopener')],
+  crate:[160,`<div class="chip block"><div class="k">the crate</div><div class="t">all ${Object.keys(COFFEES).length} coffees</div><span class="u">open</span></div>`,()=>openCrate()]
+};
+
+function buildMap(){
+  world.style.width=WORLD.w+'px';world.style.height=WORLD.h+'px';
+  world.insertAdjacentHTML('afterbegin',mapSVG());
+  let n=0;
+  BLOCKS.forEach(b=>{
+    if(b.label){
+      const cnt=b.coffees.length;
+      const el=put(b.x+16,b.y+16,b.w-32,`<span class="bl">${b.label}</span>${cnt?`<span class="bn">${cnt} on the wall</span>`:''}`,'blabel'+(cnt?'':' empty'));
+      if(!cnt){el.style.cursor='pointer';el.onclick=e=>{e.stopPropagation();showPop(el.querySelector('.bl'),`<div class="pb"><div class="t">${b.label}</div><p>nothing from here on the wall yet. tasted a good one? tell Hoa.</p></div><div class="pa"><button class="act" id="popGo">tell Hoa</button></div>`,()=>{$('popGo').onclick=()=>{closePop();openChat(`hey Hoa, I had a good coffee from ${b.label}: `)}})}}
+      gridIn(b,cnt,NOW,NOW+44,NOW+64,64).forEach(([x,y],i)=>nowFrame(b.coffees[i],x,y));
+    }
+    if(b.archive){
+      const cellW=OLD+40,cellH=OLD+66,cols=Math.max(1,Math.floor((b.w-20)/cellW)),rows=Math.max(1,Math.floor((b.h-50)/cellH));
+      put(b.x+12,b.y+12,b.w-24,`<span class="bn">archive · ${b.archive}</span>`,'blabel arch');
+      gridIn(b,cols*rows,OLD,cellW,cellH,40).forEach(([x,y])=>oldFrame(x,y,b.archive,++n));
+    }
+    if(b.info){
+      const ws=b.info.map(k=>INFO[k][0]),gap=16,total=ws.reduce((a,c)=>a+c,0)+gap*(ws.length-1);
+      let x=b.x+(b.w-total)/2;
+      b.info.forEach((k,i)=>{const el=kbd(put(x,b.y+30,ws[i],INFO[k][1],'info'));el.onclick=INFO[k][2];x+=ws[i]+gap});
+    }
+    if(b.counter){
+      put(b.x+20,b.y+316,b.w-40,`<div class="chip intro"><p>you are here. coffee inside a framing shop, kreuzberg.</p></div>`,'');
+      kbd(put(b.x+(b.w-200)/2,b.y+22,200,`<img src="img/hoa-cut.png" alt="Hoa"><div class="cap chipcap"><b>hoa</b><span class="on">behind the counter · tap to ask</span><span class="off">not in right now</span></div>`,'hoa',{id:'hoaFig'})).onclick=()=>openAsk();
+    }
+  });
+  // the back room: the one black block, with meow-meow's eyes and the live chat
+  const B=BACKROOM;
+  kbd(put(B.x,B.y,B.w,`<div class="br" style="height:${B.h}px"><div class="brt">the back room</div><button class="eyes" id="meow" aria-label="meow-meow"><i></i><i></i></button><div class="live"><b><i></i><span id="chatTag">back room · live</span></b><span id="lastMsg"></span></div></div>`,'',{id:'door'})).onclick=()=>openChat();
+  $('meow').onclick=e=>{e.stopPropagation();showPop($('meow'),`<div class="pb"><div class="t">meow-meow</div><p>the tip jar is hers.</p></div><div class="pa"><button class="act" id="treat">give a treat</button></div>`,()=>{$('treat').onclick=()=>{closePop();toast('thank you')}})};
+  setLast();
+}
+function setLast(){const m=[...log].reverse().find(m=>!m.sys);$('lastMsg')&&($('lastMsg').textContent=m?`${m.who}: ${m.t}`:'')}
+const CX=HOME[0],CY=HOME[1];
+// cats walk along the streets
+const streetSpot=(near)=>{
+  let pool=STREETS;
+  if(near){const close=STREETS.filter(s=>Math.hypot(s.x+s.w/2-near[0],s.y+s.h/2-near[1])<700);if(close.length)pool=close}
+  const s=pick(pool),v=s.h>s.w;
+  return v?[s.x+s.w*.3+Math.random()*s.w*.4,s.y+40+Math.random()*(s.h-60)]:[s.x+20+Math.random()*(s.w-40),s.y+s.h*.6+Math.random()*s.h*.3];
+};
+
+/* a coffee opens a small popup next to it first. "more" opens the full sheet */
+function coffeePop(id,el){
+  const c=COFFEES[id];
+  showPop(el.querySelector('.fwf')||el,`<div class="pb"><div class="k">${esc(c.origin||'origin tbc')} · ${esc(c.roaster)}</div><div class="t">${esc(c.farm)}</div><p>${c.character.length?c.character.join(' · '):esc(c.variety.toLowerCase())+' · '+esc(c.process.toLowerCase())}</p></div><div class="pa"><button class="act" id="popHold">hold a bag</button><button id="popMore">more</button></div>`,()=>{
+    $('popHold').onclick=()=>{closePop();openHold(id)};
+    $('popMore').onclick=()=>{closePop();openCoffee(id)};
+  });
+}
+const REGION_AT={};
+function regionCentres(){
+  REGION_AT.all=[CX,CY];
+  ['colombia','ethiopia','more'].forEach(r=>{
+    const els=[...world.querySelectorAll(`.fr[data-r="${r}"]`)];
+    if(!els.length)return;
+    const xs=els.map(e=>e.offsetLeft+e.offsetWidth/2),ys=els.map(e=>e.offsetTop+e.offsetHeight/2);
+    REGION_AT[r]=[xs.reduce((a,b)=>a+b)/xs.length,ys.reduce((a,b)=>a+b)/ys.length];
+  });
+}
+
+/* moving around: native scroll on touch + trackpad, drag with the mouse. a little smaller on phones */
+let Z=1;
+function setZoom(){Z=isDesk()?1:.8;world.style.zoom=Z}
+function centerOn(x,y,smooth=true){
+  map.scrollTo({left:x*Z-map.clientWidth/2,top:y*Z-map.clientHeight/2,behavior:smooth?'smooth':'auto'});
+}
+(()=>{let d=null,moved=false;
+  map.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button||e.target.closest('.pop'))return;d={x:e.clientX,y:e.clientY,l:map.scrollLeft,t:map.scrollTop};moved=false});
+  addEventListener('pointermove',e=>{if(!d)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;
+    if(!moved&&Math.abs(dx)+Math.abs(dy)>5){moved=true;map.classList.add('dragging')}
+    if(moved){map.scrollLeft=d.l-dx;map.scrollTop=d.t-dy}});
+  addEventListener('pointerup',()=>{d=null;map.classList.remove('dragging')});
+  map.addEventListener('click',e=>{if(moved){e.stopPropagation();e.preventDefault();moved=false}},true);
+})();
+
+/* ================= HELPERS ================= */
+function toast(t,ms=2600){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),ms)}
+const isDesk=()=>innerWidth>=900;
+
+/* ================= REGIONS ================= */
+let region='all';
+function renderRegions(){
+  $('regions').innerHTML=REGIONS.map(([r,t])=>`<button class="rg ${region===r?'on':''}" data-r="${r}">${t}</button>`).join('');
+  $('regions').querySelectorAll('.rg').forEach(b=>b.onclick=()=>setRegion(b.dataset.r));
+}
+function setRegion(r){
+  region=(region===r&&r!=='all')?'all':r;
+  world.classList.toggle('filtering',region!=='all');
+  world.querySelectorAll('.it[data-r]').forEach(f=>f.classList.toggle('on',f.dataset.r===region));
+  renderRegions();
+  centerOn(...REGION_AT[region]);
+}
+
+/* ================= SHEET ================= */
+let sheetName=null;
+function openSheet(head,body,o={}){
+  $('shead').innerHTML=head;sslot.innerHTML=body+(o.foot?`<div class="sfoot">${o.foot}</div>`:'');
+  sheet.classList.toggle('short',!!o.short);
+  sheet.classList.add('open');sheet.setAttribute('aria-hidden','false');$('scrim').classList.add('on');
+  sheetName=o.name||null;closePop();
+}
+function closeSheet(){sheet.classList.remove('open');sheet.setAttribute('aria-hidden','true');$('scrim').classList.remove('on');sheetName=null}
+$('sclose').onclick=closeSheet;$('scrim').onclick=closeSheet;
+addEventListener('keydown',e=>{if(e.key==='Escape'){closeSheet();closePop()}});
+(()=>{let y0=null,dy=0;const g=$('grab');
+ g.addEventListener('pointerdown',e=>{y0=e.clientY;dy=0;g.setPointerCapture(e.pointerId);sheet.style.transition='none'});
+ g.addEventListener('pointermove',e=>{if(y0===null)return;dy=Math.max(0,e.clientY-y0);sheet.style.transform=`translateY(${dy}px)`});
+ g.addEventListener('pointerup',()=>{sheet.style.transition='';sheet.style.transform='';if(dy>80)closeSheet();y0=null});
+})();
+const head=(k,t,sub)=>`<div class="k">${k}</div><h2>${t}</h2>${sub?`<div class="sub">${sub}</div>`:''}`;
+
+/* ================= COFFEE ================= */
+let bag=0;
+function openCoffee(id){
+  const c=COFFEES[id];
+  // label first, then Hoa's one line, two facts, the recipe as numbers. the action stays pinned at the bottom
+  const body=`<div class="sbody">
+    <div class="labelimg"><img src="img/${id}-label.jpg" alt="${esc(c.roaster)} label"></div>
+    <div class="quote">"${c.variety.includes('Gesha')?'drink it black, let it cool a bit.':/anaerobic|ferment/i.test(c.process)?'a wild one. try it as filter.':'clean and sweet. start here.'}"</div><div class="k">Hoa</div>
+    <div class="specs"><div><span class="k">variety</span>${esc(c.variety)}</div><div><span class="k">process</span>${esc(c.process)}</div></div>
+    <div class="recipe"><div><b>15g</b>coffee</div><div><b>250g</b>water</div><div><b>93°</b>temp</div><div><b>2:45</b>time</div></div>
+  </div>`;
+  openSheet(head((c.origin||'origin to confirm')+' · '+c.roaster,esc(c.farm),c.character.length?c.character.join(' · '):(c.producer?esc(c.producer):'')),body,{name:'coffee',
+    foot:`<button class="primary" id="addBag">hold a bag</button><button class="link" id="askHoa">ask Hoa</button>`});
+  $('addBag').onclick=()=>openHold(id);
+  $('askHoa').onclick=()=>openChat(`hey Hoa, how do you brew the ${c.farm}?`);
+}
+
+/* ================= HOLD FOR PICKUP =================
+   no online shop: you ask Hoa to keep a bag, you pay at the counter. demo only, nothing is sent yet */
+function pickupDays(){
+  const out=[],names=['sun','mon','tue','wed','thu','fri','sat'];let d=berlin().day;
+  for(let i=1;out.length<3&&i<10;i++){const k=(d+i)%7;if(k>=2&&k<=6)out.push(i===1?'tomorrow':names[k])}
+  return out;
+}
+function openHold(id){
+  const c=COFFEES[id];
+  // name, then pick a day (three cells), then one button
+  const days=pickupDays();let day=days[0];
+  openSheet(head('hold a bag',esc(c.farm),'pay when you pick it up.'),`<div class="sbody">
+    <div class="k">your name</div><input class="field" id="holdNm" value="${myName?esc(myName):''}" autocomplete="off">
+    <div class="k">pick up</div>
+    <div class="days">${days.map((d,i)=>`<button data-d="${d}" class="${i?'':'on'}">${d}</button>`).join('')}</div></div>`,
+    {short:1,foot:`<button class="primary" id="holdGo">hold it</button>`});
+  sslot.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{day=b.dataset.d;sslot.querySelectorAll('[data-d]').forEach(x=>x.classList.toggle('on',x===b))});
+  $('holdGo').onclick=()=>{
+    const nm=$('holdNm').value.trim();if(!nm){$('holdNm').focus();toast('add your name first');return}
+    myName=myName||nm.toLowerCase().slice(0,14);youCat&&(youCat.el.querySelector('.nm').textContent=myName);
+    closeSheet();toast(`held for ${nm} · ${day}`,3000);
+  };
+}
+
+/* ================= CRATE ================= */
+function openCrate(f='all'){
+  const ids=Object.keys(COFFEES).filter(id=>f==='all'||COFFEES[id].region===f);
+  const body=`<div class="sbody"><div class="filters">${REGIONS.filter(r=>r[0]!=='kenya').map(([r,t])=>`<button class="rg ${f===r?'on':''}" data-f="${r}">${t}</button>`).join('')}</div>
+    <div class="crate">${ids.map(id=>{const c=COFFEES[id];return `<button class="card" data-id="${id}"><div class="im" style="background-image:url(img/${id}-art.jpg)"></div><b>${esc(c.farm)}</b><span>${esc(c.origin||'origin tbc')} · ${esc(c.roaster)}</span></button>`}).join('')}</div></div>`;
+  openSheet(head('the crate','on the wall'),body);
+  sslot.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>openCrate(b.dataset.f));
+  sslot.querySelectorAll('.card').forEach(b=>b.onclick=()=>openCoffee(b.dataset.id));
+}
+
+/* ================= EVENTS / ABOUT ================= */
+const HOURS=[['Mon','closed'],['Tue','8 - 16'],['Wed','8 - 16'],['Thu','8 - 16'],['Fri','8 - 16'],['Sat','9 - 17'],['Sun','closed']];
+function openEvents(){
+  const idx=(berlin().day+6)%7;
+  const body=`<div class="sbody">
+   <div class="evp"><div class="k">sat 14 nov · 12 - 18</div><h4>brew your<br>own cup</h4><p>with luko · the playce at studio 5</p></div>
+   <div class="row1"><b>cupping club</b><span>every few weeks</span></div>
+   <div class="k" style="margin-bottom:4px">hours</div>
+   <table class="hours">${HOURS.map((d,i)=>`<tr class="${i===idx?'today':''}"><td>${d[0]}${i===idx?' · today':''}</td><td>${d[1]}</td></tr>`).join('')}</table></div>`;
+  openSheet(head('the counter',"what's on"),body,{foot:`<button class="primary" onclick="toast('see you there')">I'm coming on the 14th</button>`});
+}
+function openAbout(){
+  const body=`<div class="sbody">
+   <div class="hero"><img src="img/hoa-cut.png" alt="Hoa"></div>
+   <div class="quote">"What is good coffee? This question has been following me since my early days."</div>
+   <div class="k">Hoa</div>
+   <div class="rule"></div>
+   <p>a coffee popup inside Frameworks Berlin, a framing shop in Kreuzberg.</p></div>`;
+  openSheet(head('about','not your typical barista'),body,{foot:`<a class="primary" href="https://t.me/antibarist" target="_blank" rel="noopener">join on telegram</a>`});
+}
+
+/* ================= ASK HOA ================= */
+const Q=[
+  {q:'how do you make coffee at home?',a:[['espresso machine','esp'],['filter: V60, Chemex, AeroPress','fil'],['moka pot','moka'],["I don't. I come here.",'any']]},
+  {q:'what do you want to taste?',a:[['fruit. berries, citrus, juice','fruit'],['flowers. jasmine, tea','floral'],['sweet. chocolate, caramel','sweet'],['surprise me','any']]},
+  {q:'how wild can it be?',a:[['keep it clean and classic','clean'],['a little funky is fine','funky1'],['the weirder the better','funky2']]},
+  {q:'light like tea, or heavy and syrupy?',a:[['light','light'],['somewhere in between','mid'],['heavy','heavy']]}
+];
+function tags(c){
+  const t=new Set(),w=c.character.join(' ');
+  if(/juicy|vibrant|sparkling|winey|crisp/.test(w))t.add('fruit');
+  if(/floral|delicate|elegant/.test(w))t.add('floral');
+  if(/silky|velvety|smooth|sirupy/.test(w))t.add('sweet');
+  if(/crisp|delicate|elegant|vibrant/.test(w))t.add('light');
+  if(/sirupy|silky|winey|complex/.test(w))t.add('heavy');
+  if(!c.character.length){ // no words on the label: go by variety
+    if(/Gesha|Chiroso|Landrace/.test(c.variety)){t.add('floral');t.add('light')}
+    if(/Pink Bourbon|Chiroso|Landrace/.test(c.variety))t.add('fruit');
+  }
+  const p=c.process.toLowerCase();
+  t.add(/anaerobic|ferment/.test(p)?'funky2':/natural|honey/.test(p)?'funky1':'clean');
+  return t;
+}
+let answers=[];
+function openAsk(step=-1){
+  const face=`<div class="hoa-head"><img src="img/hoa-cut.png" alt=""><div><div style="font:700 24px/1 var(--title)">Hoa</div><div class="k">behind the counter</div></div></div>`;
+  if(step===-1){
+    answers=[];
+    openSheet(head('ask hoa','what is good coffee?'),`<div class="sbody"><div class="hero"><img src="img/hoa-cut.png" alt="Hoa"></div><p>four questions. one coffee.</p></div>`,{short:1,foot:`<button class="primary" id="go">start</button>`});
+    $('go').onclick=()=>openAsk(0);return;
+  }
+  if(step===Q.length)return askResult();
+  const q=Q[step];
+  openSheet(head('ask hoa',`question ${step+1} of ${Q.length}`),`<div class="sbody">${face}<div class="prog">${Q.map((_,i)=>`<i class="${i<=step?'on':''}"></i>`).join('')}</div><div class="say">${q.q}</div><div class="opts">${q.a.map(a=>`<button data-v="${a[1]}">${a[0]}</button>`).join('')}</div></div>`,{short:1});
+  sslot.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{answers[step]=b.dataset.v;openAsk(step+1)});
+}
+function askResult(){
+  const [brew,taste,wild,body]=answers;
+  const scored=Object.entries(COFFEES).map(([id,c])=>{
+    const t=tags(c);let s=Math.random()*.3;
+    if(taste!=='any'&&t.has(taste))s+=3;
+    if(t.has(wild))s+=2; else if(wild==='funky2'&&t.has('funky1'))s+=1;
+    if(body==='light'&&t.has('light'))s+=1.5;
+    if(body==='heavy'&&t.has('heavy'))s+=1.5;
+    if(body==='mid'&&!t.has('light')&&!t.has('heavy'))s+=1;
+    if((brew==='esp'||brew==='moka')&&(t.has('sweet')||t.has('heavy')))s+=1;
+    if(brew==='fil'&&(t.has('floral')||t.has('light')))s+=1;
+    return {id,c,s};
+  }).sort((a,b)=>b.s-a.s);
+  const top=scored[0],more=scored.slice(1,3);
+  const why={fruit:'It tastes like fruit',floral:'It is light and flowery',sweet:'It is sweet and round',any:'It is one of my favourites right now'}[taste];
+  const how={esp:'pull it as espresso',fil:'brew it as filter',moka:'it works on a moka pot',any:'come by and I make it for you'}[brew];
+  const body2=`<div class="sbody">
+    <div class="labelimg"><img src="img/${top.id}-label.jpg" alt=""></div>
+    <div class="quote">"Try ${esc(top.c.farm)}. ${why}, and ${how}."</div><div class="k" style="margin-bottom:24px">Hoa</div>
+    <div class="k" style="margin-bottom:4px">also try</div>
+    ${more.map(m=>`<button class="pick" data-id="${m.id}"><div class="im" style="background-image:url(img/${m.id}-art.jpg)"></div><div><b>${esc(m.c.farm)}</b><span>${esc(m.c.variety)} · ${esc(m.c.process)}</span></div></button>`).join('')}
+    <button class="link" id="again" style="margin-top:14px">ask again</button></div>`;
+  openSheet(head('ask hoa','your coffee'),body2,{foot:`<button class="primary" id="seeTop">see it</button><button class="link" id="talk">ask Hoa</button>`});
+  $('seeTop').onclick=()=>openCoffee(top.id);$('again').onclick=()=>openAsk(0);
+  $('talk').onclick=()=>openChat(`hey Hoa, you told me to try the ${top.c.farm}. `);
+  sslot.querySelectorAll('.pick').forEach(b=>b.onclick=()=>openCoffee(b.dataset.id));
+}
+
+/* ================= CHAT ================= */
+const TOPICS=[['Café Window',1],['Cupping Club'],['Brewing Recipes'],['Coffee Review'],['Beanexchange'],['Coffee Memes']];
+let myName=null;
+let log=[
+  {sys:'linked to the Café Window topic on Telegram.'},
+  {who:'mila',t:'is the Granja Paraíso still there? it tasted like orange juice',at:'09:41'},
+  {who:'Hoa',t:'yes, 3 bags left. come before saturday',at:'09:44',hoa:1},
+  {who:'jonas',t:'who is going to brew your own cup on the 14th?',at:'10:12'},
+  {who:'ece',t:'me. bringing my own grinder',at:'10:15'}
+];
+let unread=0;
+const hm=()=>{const b=berlin();return String(b.h).padStart(2,'0')+':'+String(b.m).padStart(2,'0')};
+const msgHTML=m=>m.sys?`<div class="sys">${esc(m.sys)}</div>`:`<div class="m ${m.hoa?'h':''} ${m.me?'me':''}"><div class="who">${esc(m.who)} · ${m.at}${m.me?' · sent':''}</div>${esc(m.t)}</div>`;
+function openChat(prefill=''){
+  unread=0;badge();
+  const n=cats.filter(c=>!c.you).length;
+  const body=`<div class="topics">${TOPICS.map((t,i)=>`<button class="topic ${i===0?'on':''}" data-i="${i}">${t[0]}</button>`).join('')}</div>
+   <div class="chat" id="chat">${log.map(msgHTML).join('')}</div>
+   <form class="compose" id="compose"><input id="cin" placeholder="write to Hoa and the group" autocomplete="off" enterkeyhint="send"><button>send</button></form>`;
+  openSheet(head(`live · ${n+1} here`,'the back room'),body,{name:'chat'});
+  $('chat').scrollTop=1e6;
+  const cin=$('cin');cin.value=prefill;if(isDesk())setTimeout(()=>cin.focus(),400);
+  $('compose').onsubmit=e=>{e.preventDefault();const v=cin.value.trim();if(!v)return;cin.value='';
+    push({who:myName||'you',t:v,at:hm(),me:1});youCat&&youCat.say(v.length>18?v.slice(0,16)+'…':v);reply(v)};
+  sslot.querySelectorAll('.topic').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i;if(i===0)return openChat();
+    sslot.querySelectorAll('.topic').forEach(x=>x.classList.toggle('on',x===b));
+    $('chat').innerHTML=`<div class="locked"><div class="quote">${TOPICS[i][0]}</div><p style="color:var(--mute)">members only.</p><a class="primary" href="https://t.me/antibarist" target="_blank" rel="noopener" style="margin-top:18px">join on telegram</a></div>`;
+    $('compose').style.display='none';
+  });
+}
+function push(m){
+  log.push(m);setLast();
+  if(sheetName==='chat'&&$('chat')){$('chat').insertAdjacentHTML('beforeend',msgHTML(m));$('chat').scrollTop=1e6}
+  else if(!m.me){unread++;badge()}
+}
+function badge(){$('chatTag').textContent=unread>0?`back room · ${unread} new`:'back room · live'}
+function typing(name,ms,cb){
+  setTimeout(()=>{if($('chat')){$('chat').insertAdjacentHTML('beforeend',`<div class="typing" id="typ">${name} is typing</div>`);$('chat').scrollTop=1e6}},600);
+  setTimeout(()=>{$('typ')&&$('typ').remove();cb()},ms);
+}
+function reply(q){
+  const s=q.toLowerCase(),at=(s.match(/@(\w+)/)||[])[1],mate=at&&cats.find(c=>c.name===at);
+  if(mate){typing(mate.name,2600,()=>{push({who:mate.name,t:pick(['hey, nice to meet you here','hi! are you at Frameworks right now?','hello. have you tried the Granja Paraíso?']),at:hm()});mate.say('hi')});return}
+  let a;
+  if(/oat|milk|cow/.test(s))a='both work. but for the fruity ones, try it without milk first';
+  else if(/open|hour|when|today|close/.test(s))a=berlin().open?'open right now, come by':'closed right now. tue to fri 8-16, sat 9-17';
+  else if(/fruit|recommend|which|best|suggest|try/.test(s))a='fruity: Los Nogales. flowery: Las Flores. sweet: Granja Paraíso';
+  else if(/brew|recipe|grind|v60|how/.test(s))a='15g coffee, 250g water, 93 degrees, around 2:45. then taste and adjust';
+  else if(/cat|meow/.test(s))a='meow-meow is the real boss here';
+  else if(/^(hi|hey|hello|hallo|moin|ciao)/.test(s))a='hey, welcome to the back room';
+  else a='good question, give me a minute. or ask me at the counter';
+  typing('Hoa',2600,()=>push({who:'Hoa',t:a,at:hm(),hoa:1}));
+}
+const RANDOM=[['mila','just got the SEY El Girasol, smells crazy'],['luca','cupping club next week?'],['Hoa','new on the wall: SEY Geshe from Ethiopia',1],['jonas','meow-meow is sleeping on my jacket again'],['Hoa','batch brew is ready',1]];
+function randomMsg(){const r=pick(RANDOM);push({who:r[0],t:r[1],at:hm(),hoa:r[2]});if(sheetName!=='chat')toast('new message in the back room',1800)}
+setInterval(()=>{if(Math.random()<.4)randomMsg()},32000);
+$('askBtn').onclick=()=>openAsk();
+
+/* ================= OPEN / CLOSED ================= */
+function berlin(){
+  const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Berlin',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()).map(x=>[x.type,x.value]));
+  const day=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(p.weekday),h=+p.hour%24,m=+p.minute,t=h+m/60;
+  let open=false,close=0;
+  if(day>=2&&day<=5&&t>=8&&t<16){open=true;close=16}
+  if(day===6&&t>=9&&t<17){open=true;close=17}
+  return {day,h,m,open,close};
+}
+let forced=null;
+const nextOpen=d=>(d===6||d===0||d===1)?'tue 8:00':(berlin().h<8?'today 8:00':'tomorrow 8:00');
+function applyOpen(){
+  const b=berlin(),open=forced===null?b.open:forced;
+  document.body.classList.toggle('closed',!open);
+  $('cvSt')&&($('cvSt').innerHTML=(open?'open now'+(forced===null?' · till '+b.close+':00':''):'closed · back '+nextOpen(b.day))+'<span>tue - fri 8-16 · sat 9-17 · Frameworks Berlin, Kreuzberg</span>');
+  $('statusTxt').innerHTML=open?`<b>open</b>${forced===null?'till '+b.close+':00':'Hoa is in'}`:`<b>closed</b>back ${nextOpen(b.day)}`;
+}
+function toggleOpen(){forced=document.body.classList.contains('closed');applyOpen();toast(forced?'lights on · Hoa is in':'lights off · closed')}
+
+/* ================= CATS ================= */
+// every cat is a visitor. they walk along the streets. x, y = px in the wall (where the paws are)
+const CAT=`<svg viewBox="0 0 140 60"><g class="flip">
+ <path d="M8 36 L12 16 L18 27 L23 14 L27 28 L100 28"/>
+ <g class="tail"><path d="M100 28 L137 10 L134 17 L100 33"/></g>
+ <g class="la"><path d="M8 36 L18 38 L14 52 L22 44 L24 54 L30 38 L84 34 L80 50 L88 42 L90 52 L100 33"/></g>
+ <g class="lb"><path d="M8 36 L18 38 L22 52 L25 44 L31 54 L33 38 L86 34 L93 50 L95 42 L99 52 L100 33"/></g>
+ <g class="ls"><path d="M8 36 L18 38 L19 44 L32 44 L34 38 L84 34 L85 42 L98 42 L100 33"/></g>
+</g></svg>`;
+const clampX=x=>Math.max(40,Math.min(WORLD.w-40,x)),clampY=y=>Math.max(60,Math.min(WORLD.h-30,y));
+let cats=[],youCat=null,popFor=null;
+class Cat{
+  constructor(o={}){
+    this.you=!!o.you;const used=cats.map(c=>c.name);
+    this.name=this.you?'you':(pick(NAMES.filter(n=>!used.includes(n)))||'guest');this.from=pick(FROM);
+    const sp=streetSpot(HOME);this.x=o.x??sp[0];this.y=o.y??sp[1];
+    this.el=document.createElement('button');this.el.className='cat sit'+(this.you?' you':'');
+    this.el.innerHTML=CAT+`<span class="nm">${this.name}</span>`;
+    this.el.onclick=e=>{e.stopPropagation();this.you?youPop():matePop(this)};
+    world.appendChild(this.el);
+    this.wait=1500+Math.random()*4000;this.target=null;this.speed=45+Math.random()*35;
+    if(o.enter){ // walks in from the edge of what you can see
+      const vx=map.scrollLeft/Z,vy=map.scrollTop/Z;
+      this.x=vx-40;this.y=clampY(vy+map.clientHeight/Z*(.4+Math.random()*.4));
+      this.go(vx+60+Math.random()*map.clientWidth/Z*.5,this.y);
+    }
+    this.place();
+  }
+  place(){this.el.style.left=this.x+'px';this.el.style.top=this.y+'px'}
+  go(x,y){this.target={x,y};this.el.classList.remove('sit');this.el.classList.add('walk');this.el.classList.toggle('right',x>this.x)}
+  say(t,ms=1800){const b=this.el.querySelector('.nm');b.textContent=t;clearTimeout(this.st);this.st=setTimeout(()=>b.textContent=this.you?(myName||'you'):this.name,ms)}
+  tick(dt){
+    if(this===popFor)return;
+    if(!this.target){
+      if(this.leaving){this.el.remove();cats=cats.filter(c=>c!==this);here();return}
+      this.wait-=dt;if(this.wait<=0){
+        // mostly stroll nearby, sometimes wander off to another wall
+        this.go(...streetSpot(Math.random()<.2?null:[this.x,this.y])); // mostly nearby streets, sometimes across town
+      }
+      return;
+    }
+    const dx=this.target.x-this.x,dy=this.target.y-this.y,d=Math.hypot(dx,dy),st=this.speed*dt/1000;
+    if(d<=st){this.x=this.target.x;this.y=this.target.y;this.target=null;this.el.classList.remove('walk');this.el.classList.add('sit');this.wait=(document.body.classList.contains('closed')?9000:4000)+Math.random()*7000}
+    else{this.x+=dx/d*st;this.y+=dy/d*st}
+    this.place();
+  }
+  leave(){this.leaving=true;this.go(this.x<WORLD.w/2?-60:WORLD.w+60,this.y)}
+}
+const here=()=>{$('hereN').textContent=cats.length;$('cvHere')&&($('cvHere').textContent=cats.length)};
+function addCat(o){const c=new Cat(o);cats.push(c);here();return c}
+
+/* ================= POPUPS ================= */
+let popEl=null;
+function showPop(anchor,html,after){
+  closePop();popEl=document.createElement('div');popEl.className='pop';popEl.innerHTML=html;popEl.onclick=e=>e.stopPropagation();map.appendChild(popEl);
+  const mr=map.getBoundingClientRect(),wr={left:mr.left-map.scrollLeft,top:mr.top-map.scrollTop},r=anchor.getBoundingClientRect(),half=popEl.offsetWidth/2+10;
+  const x=r.left+r.width/2-wr.left,minX=map.scrollLeft+half,maxX=map.scrollLeft+map.clientWidth-half;
+  const px=Math.max(minX,Math.min(maxX,x));
+  popEl.style.left=px+'px';
+  popEl.style.setProperty('--ax',(x-px+popEl.offsetWidth/2)+'px'); // the little arrow points at the thing, even when the card is pushed in from the edge
+  popEl.style.top=Math.max(map.scrollTop+popEl.offsetHeight+12,r.top-wr.top-14)+'px';
+  after&&after();
+}
+function closePop(){popEl&&popEl.remove();popEl=null;popFor=null}
+map.addEventListener('click',closePop);
+function matePop(c){
+  showPop(c.el,`<div class="pb"><div class="t">${c.name}</div><p>from ${c.from}</p></div><div class="pa"><button class="act" id="hi">say hi</button></div>`,()=>{$('hi').onclick=()=>{closePop();openChat('@'+c.name+' ')}});
+  popFor=c;c.el.classList.remove('walk');c.el.classList.add('sit');
+}
+function youPop(){
+  showPop(youCat.el,`<div class="pb"><div class="t">this is you</div><input id="nm" maxlength="14" placeholder="your name" value="${myName?esc(myName):''}"></div><div class="pa"><button class="act" id="saveNm">save</button></div>`,()=>{
+    $('saveNm').onclick=()=>{const v=$('nm').value.trim().toLowerCase().replace(/[^\p{L}\p{N}_]/gu,'').slice(0,14);if(v){myName=v;youCat.el.querySelector('.nm').textContent=v}closePop()};
+  });
+  popFor=youCat;
+}
+
+/* ================= BOOT ================= */
+let last=performance.now();
+function loop(t){const dt=Math.min(60,t-last);last=t;cats.forEach(c=>c.tick(dt));requestAnimationFrame(loop)}
+$('demoBtn').onclick=e=>{e.stopPropagation();$('demo').classList.toggle('on')};
+document.addEventListener('click',e=>{if(!$('demo').contains(e.target))$('demo').classList.remove('on')});
+$('demo').querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{
+  const d=b.dataset.d;
+  if(d==='in'){const c=addCat({enter:true});toast(c.name+' opened the site')}
+  if(d==='out'){const c=cats.find(c=>!c.you&&!c.leaving);if(c){c.leave();toast(c.name+' left')}}
+  if(d==='msg')randomMsg();
+  if(d==='open')toggleOpen();
+  $('demo').classList.remove('on');
+});
+$('hereBtn').onclick=()=>{toast(`${cats.length} here now · tap a cat`);youCat.say('this is you',2200)};
+addEventListener('resize',()=>{setZoom()});
+// landing: step inside opens the map at the back room. the logo brings the landing back
+$('enterBtn').onclick=()=>{$('cover').classList.add('gone');centerOn(...REGION_AT.all,false)};
+$('cvAsk').onclick=()=>{$('cover').classList.add('gone');openAsk()};
+if(location.hash==='#inside')$('cover').classList.add('gone'); // a link straight into the map
+document.querySelector('.top .logo').style.cursor='pointer';
+document.querySelector('.top .logo').onclick=()=>$('cover').classList.remove('gone');
+$('homeBtn').onclick=()=>{if(region!=='all')setRegion('all');else centerOn(...REGION_AT.all)};
+
+function boot(){
+  buildMap();regionCentres();setZoom();renderRegions();
+  window.FrameworksFrames&&FrameworksFrames.scan();
+  centerOn(...REGION_AT.all,false);
+  youCat=addCat({you:true,x:1170,y:1205});
+  const n=2+Math.floor(Math.random()*2);for(let i=0;i<n;i++)addCat();
+  applyOpen();setInterval(applyOpen,60000);requestAnimationFrame(loop);
+  setTimeout(()=>{unread=2;badge()},5000);
+  setInterval(()=>{const r=Math.random();if(r<.25&&cats.length<6)addCat({enter:true});else if(r>.85&&cats.length>3){const c=cats.find(c=>!c.you&&!c.leaving&&c!==popFor);c&&c.leave()}},18000);
+}
+document.fonts?document.fonts.ready.then(boot):boot();
+</script>
+</body>
+</html>
