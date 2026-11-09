@@ -64,6 +64,7 @@ The owner (Remon, the designer) was very clear about these:
 **Voice:** Hoa hates the word "specialty coffee". Never use it. **Nothing that makes him sound like a snob**: no big Hoa quotes, no "what is good coffee?" philosophy, no telling people how they should drink it, no tasting-note one-liners, no "not your typical barista" (removed on request). Good coffee without the fuss, no lectures, short lines, lowercase. Keep copy short (the owner trims long text).
 
 ### Landing (`#cover`)
+- **Switched off for now**: the section has `class="cover gone" hidden`, so the site opens straight on the map and the logo goes back to the centre. To bring it back, remove `gone hidden` and set the logo click back to `$('cover').classList.remove('gone')`.
 - A plain, readable front page first: ANTIBARIST, Hoa's photo, "coffee, cats and good company", one short paragraph, open/closed + hours + place, **step inside** (opens the map at the back room), people inside right now, ask hoa / telegram links.
 - The logo in the top bar brings the landing back. `index.html#inside` skips it (for sharing a link straight into the map).
 
@@ -77,21 +78,21 @@ The owner (Remon, the designer) was very clear about these:
   - **Drawn countries** (`ORIGINS`, `drawOrigin()`): every country Hoa has served (colombia, ethiopia, panama, kenya) is drawn as a small hand-simplified outline, all at the same scale (`MAP_SCALE`). The hatching gets denser the more often it was on the wall (`ALLTIME`, this week + archive). Inside it, **contour lines**, one per farm at its altitude (higher = further in), with the farm as a dot on its line. Under it: big name, the local time ("16:07 there now"), a 12-month harvest strip + "harvest is on now / next harvest from oct", the coffees as grey crops that colour in when the country is tapped, and counts.
   - **Close zoom opens a country**: `.world.near` (zoom >= .95) shows farm names on the map and the farm list (producer, altitude). Tapping a drawn country zooms in to it (`openCountry()`). `.world.far` (< .5) shows only the big names.
   - Country names and roaster names use **IBM Plex Mono, not Amatic SC** (owner: no logo font on the countries). No region lettering (removed on request).
-  - **Sample origins (DEMO)**: the 5 coffees with no country on the label got a sample country (`sample:true` in `COFFEES`): la torre > Colombia, sánchez + mazateca > Kenya, melgar + romerillo > Ethiopia. There is no "origin to confirm" node any more. Replace with the real origins from Hoa.
+  - **Unconfirmed origins**: the 5 coffees with no country on the label (la torre, sánchez, melgar, mazateca, romerillo) have `origin:''` and region `more`. They show "origin to confirm", draw no country line, and Kenya is no longer drawn (it only had guessed coffees). Fill in the real origins from Hoa.
   - **Small countries** (never served) keep the small mono label, now with their local time.
   - **The trip**: a coffee's line goes farm (country dot) > circle line > its **roaster station** (`ROASTERS`, small ring on the circle line, tappable) > its tile > the back room. The coffee popup shows "colombia › SEY › back room". Unconfirmed origins are dashed.
-  - **Travelling cats**: about every 30s a cat may walk out to a drawn country, say "hi from panama", and come back (`Cat.travel()`, toast "mila went to panama").
+  - **Travelling cats**: `Cat.travel()` still exists but is not triggered any more (the "hi from panama" trips were removed).
   - **DEMO, confirm with Hoa**: farm altitudes (`ALT`, not on the labels), harvest months (rough public calendars), the city of liquid dream. ("city to confirm"), SEY placed in Brooklyn, New York. The outlines are simplified by hand, not exact borders.
 - **Info nodes** (hours, about, telegram, crate) sit in the free space after the end of the spiral (left side). The event is the poster in the centre.
 - **Interaction:** everything is tagged (`data-hl`: `id:`, `c:` country, `r:` region, `m:` month). `highlight(token)` lights those up and fades the rest; `restoreHl()` goes back to the region tab or to nothing. Tap/hover a coffee → its line + its earlier appearances in the archive; tap a country → its coffees; tap a month → that month; region tabs use the same.
 - **Zoom + theme bar** (`.zbar`, bottom right of the map, phone and desktop): + − (`zoomTo`) and ◐ light/dark. Also pinch and ctrl/cmd + scroll. Never reset the zoom on resize (phones fire resize while scrolling).
-- **How to read** key: only via the "?" in the bottom bar (no automatic popup). Each line has a small drawing of the real thing (back room, tile, spiral, country, cat) plus a line on how to move.
+- **How to read** key: only via the "?" in the bottom bar (no automatic popup). Two lines only: "follow the spiral out" and "every cat is a person", each with a small drawing, plus a line on how to move.
 - **Cats** walk in the free space between the turns (`streetSpot`), never on the tiles. Only "you" keeps a name tag; the others show it when they talk.
 - **Instagram on the spiral** (`POSTS`, `putPost()`, `settlePosts()`): Hoa's posts hang on the spiral on their day, beside the line between the coffees of that month (small 4:5 photo + "ig · 07 nov"). Archive months are grey like the tiles. Tagged `ig|m:<month>|id:<coffee>`, so tapping a coffee or a month also lights up its posts. A post belongs to a coffee when its **caption names it** (short name, farm, or catalogue number like AB-003), see `postCoffees()`. So Hoa only has to name the coffee in his caption. Tap a post: a sheet with the big picture, the caption, "on the wall" links to the coffees, and "see it on instagram".
   - **Coffee sheet**: "seen on the counter · n", a contact-sheet strip of the posts about that coffee.
   - Pictures in `img/ig/` are **real** (19 posts the owner downloaded, resized to 900px). **DEMO: dates and captions are invented**, and so are the coffee links (only posts 11-13 really show SEY boxes). The link goes to the profile, not the post.
   - Real version: Instagram API with Instagram Login (needs Hoa's account as business/creator) fetched by the same small server as the Telegram bridge, or a feed service like Behold. Do **not** use Instagram's embed widget (own look, slow, Meta cookies = consent banner in Germany).
-- **Notes on a coffee** (comment section): in the coffee sheet, and "notes · n" in the popup. `NOTE_SEED` = invented demo notes, new ones are saved on the device only (localStorage). Real version: store them on the server next to the back room chat.
+- **Notes on a coffee** (comment section): in the coffee sheet, and "notes · n" in the popup. `NOTE_SEED` is empty (the invented demo notes were removed), new ones are saved on the device only (localStorage). Real version: store them on the server next to the back room chat.
 - **Dark mode** exists (follows the device, toggle remembered): the back room stays black in both themes.
 
 ### Cats = visitors
@@ -118,14 +119,14 @@ The owner (Remon, the designer) was very clear about these:
 **Placeholders, must come from Hoa:**
 - brew recipe (all show 15g / 250g / 93° / 2:45), prices
 - the 4 Ask Hoa questions and the result sentences (drafts)
-- chat messages, member names (mila, jonas, ece, ...) are invented, not real group members
+- chat: the seeded messages, random messages, canned Hoa replies and the "fake Telegram message" demo button were removed. The chat starts empty and only shows what you write. Cat names (mila, jonas, ece, ...) are still invented
 - opening hours: Tue to Fri 8-16, Sat 9-17 (from his Instagram, please confirm)
 - exact address (Instagram mentions Paul-Lincke-Ufer and Mariannenstraße 26)
 - event: Antibarist x Luko, "brew your own cup", Sat 14 Nov 2026, 12-18, The Playce at Studio 5 (from his poster)
 
 ## Demo controls
 
-Top right sliders icon: add/remove a visitor, fake a Telegram message, switch open/closed. These are for showing the idea to Hoa. Remove them for the real site.
+Removed (the add/remove visitor and open/closed switch). Open/closed now only follows the real Berlin time.
 
 ## Next steps (planned, not built)
 
